@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Call Sheet — The Director's Chair</title>
+<meta name="description" content="Submit your story. Pick a premise or bring your own. If it's chosen, real people play your characters — each filming their own confessional alone.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #0A0908;
+    --charcoal: #17140F;
+    --charcoal-lift: #1F1B14;
+    --line: rgba(242,237,227,0.09);
+    --tungsten: #E8A33D;
+    --tungsten-hot: #F4C468;
+    --tally: #C4432E;
+    --paper: #F2EDE3;
+    --ash: #8A8378;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--void);
+    color: var(--paper);
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 500; letter-spacing: -0.01em; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  a { color: inherit; }
+  button { font-family: inherit; cursor: pointer; }
+
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Nav (matches submitter-profile.html / cast-profile.html pattern) ---------- */
+  nav {
+    background: rgba(10,9,8,0.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav .inner {
+    max-width: 1040px; margin: 0 auto; padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between; height: 64px;
+  }
+  .brand { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 500; }
+  .brand .dot { color: var(--tungsten); }
+  .back-link { color: var(--ash); font-size: 0.88rem; text-decoration: none; }
+  .back-link:hover { color: var(--paper); }
+  .page-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--ash);
+    letter-spacing: 0.04em;
+  }
+
+  .btn {
+    padding: 12px 22px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.92rem;
+    border: none;
+    transition: transform 0.12s ease, opacity 0.12s ease;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--tungsten); color: var(--void); }
+  .btn-primary:hover { background: var(--tungsten-hot); }
+  .btn-ghost { background: transparent; color: var(--paper); border: 1px solid var(--line); }
+  .btn-ghost:hover { border-color: var(--ash); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ---------- Loading / redirect state (while checking for writer session) ---------- */
+  #session-check { min-height: 60vh; display: flex; align-items: center; justify-content: center; color: var(--ash); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+
+  main { padding: 40px 0 100px; }
+
+  /* ---------- Progress ---------- */
+  .progress { display: flex; gap: 6px; margin-bottom: 40px; }
+  .progress-seg {
+    height: 3px; flex: 1;
+    background: var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-seg.done { background: var(--tungsten); }
+  .progress-seg.active { background: var(--tungsten-hot); }
+  .step-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--ash);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* ---------- Steps ---------- */
+  .step { display: none; }
+  .step.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .step h2 { font-size: 1.7rem; margin-bottom: 8px; }
+  .step .sub { color: var(--ash); font-size: 0.96rem; margin-bottom: 30px; max-width: 60ch; }
+
+  /* ---------- Path Selector Cards ---------- */
+  .path-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 640px) { .path-grid { grid-template-columns: 1fr; } }
+  .path-card {
+    border: 1px solid var(--line);
+    background: var(--charcoal);
+    border-radius: 6px;
+    padding: 28px 24px;
+    text-align: left;
+    color: var(--paper);
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .path-card:hover { border-color: var(--tungsten); background: var(--charcoal-lift); }
+  .path-card .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--tungsten);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .path-card h3 { font-size: 1.25rem; margin-bottom: 8px; }
+  .path-card p { color: var(--ash); font-size: 0.9rem; line-height: 1.55; }
+  .path-card .price-line {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--tungsten-hot);
+  }
+
+  /* ---------- Genre Tabs ---------- */
+  .genre-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .genre-tab {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ash);
+    padding: 7px 14px;
+    border-radius: 100px;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .genre-tab.active { background: var(--tungsten); border-color: var(--tungsten); color: var(--void); }
+  .genre-tab:hover:not(.active) { border-color: var(--ash); color: var(--paper); }
+
+  /* ---------- Preset Grid ---------- */
+  .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-height: 480px; overflow-y: auto; padding: 4px; margin-bottom: 20px; }
+  @media (max-width: 640px) { .preset-grid { grid-template-columns: 1fr; } }
+  .preset-card {
+    border: 1px solid var(--line);
+    background: var(--charcoal);
+    border-radius: 5px;
+    padding: 16px 16px;
+    text-align: left;
+    color: var(--paper);
+  }
+  .preset-card:hover { border-color: var(--ash); }
+  .preset-card.selected { border-color: var(--tungsten); background: var(--charcoal-lift); box-shadow: 0 0 0 1px var(--tungsten); }
+  .preset-card .p-genre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--tally);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .preset-card h4 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 1.02rem; margin-bottom: 6px; }
+  .preset-card p { color: var(--ash); font-size: 0.84rem; line-height: 1.45; }
+  .selected-banner {
+    display: none;
+    border: 1px solid var(--tungsten);
+    background: var(--charcoal-lift);
+    border-radius: 5px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+  }
+  .selected-banner.show { display: block; }
+  .selected-banner .p-genre { color: var(--tally); font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.05em; text-transform: uppercase; }
+  .selected-banner strong { display: block; margin: 4px 0; font-family: 'Fraunces', serif; font-size: 1.1rem; }
+
+  /* ---------- Form Fields ---------- */
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--paper); }
+  .field-hint { font-size: 0.78rem; color: var(--ash); margin-bottom: 8px; }
+  textarea, input[type="text"] {
+    width: 100%;
+    background: var(--charcoal);
+    border: 1px solid var(--line);
+    color: var(--paper);
+    border-radius: 4px;
+    padding: 11px 13px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.92rem;
+  }
+  textarea:focus, input[type="text"]:focus { outline: none; border-color: var(--tungsten); }
+  textarea { min-height: 110px; resize: vertical; }
+  .field-group { margin-bottom: 22px; }
+
+  /* ---------- Character Rows ---------- */
+  .char-row {
+    border: 1px solid var(--line);
+    background: var(--charcoal);
+    border-radius: 5px;
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .char-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .char-row-head .num { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--tungsten); }
+  .remove-char {
+    background: transparent; border: none; color: var(--ash);
+    font-size: 0.78rem; text-decoration: underline;
+  }
+  .remove-char:hover { color: var(--tally); }
+  .remove-char:disabled { opacity: 0.3; text-decoration: none; cursor: not-allowed; }
+  .add-char-btn {
+    background: transparent;
+    border: 1px dashed var(--ash);
+    color: var(--ash);
+    width: 100%;
+    padding: 12px;
+    border-radius: 5px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+  .add-char-btn:hover { border-color: var(--tungsten); color: var(--tungsten); }
+
+  /* ---------- Consent ---------- */
+  .consent-box {
+    border: 1px solid var(--line);
+    background: var(--charcoal);
+    border-radius: 6px;
+    padding: 24px;
+    margin-bottom: 20px;
+    max-height: 340px;
+    overflow-y: auto;
+    font-size: 0.87rem;
+    color: var(--paper);
+    line-height: 1.65;
+  }
+  .consent-box h4 { font-family: 'Fraunces', serif; font-size: 1rem; margin: 18px 0 8px; color: var(--tungsten-hot); }
+  .consent-box h4:first-child { margin-top: 0; }
+  .consent-box strong { color: var(--paper); }
+  .consent-box .warn { color: var(--tally); font-weight: 600; }
+  .check-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    border: 1px solid var(--line);
+    padding: 16px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+  .check-row input[type="checkbox"] { margin-top: 3px; width: 17px; height: 17px; accent-color: var(--tungsten); flex-shrink: 0; }
+  .check-row label { font-weight: 400; font-size: 0.88rem; margin: 0; }
+
+  /* ---------- Payment ---------- */
+  .price-card {
+    border: 1px solid var(--tungsten);
+    background: var(--charcoal-lift);
+    border-radius: 6px;
+    padding: 26px;
+    margin-bottom: 22px;
+  }
+  .price-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .price-row .amt { font-family: 'Fraunces', serif; font-size: 1.9rem; color: var(--tungsten-hot); }
+  .price-card .fine { color: var(--ash); font-size: 0.82rem; margin-top: 10px; }
+  .dev-note {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--tally);
+    border: 1px dashed var(--tally);
+    padding: 10px 12px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+
+  /* ---------- Nav Buttons ---------- */
+  .step-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; gap: 12px; }
+  .err-msg { color: var(--tally); font-size: 0.84rem; margin-top: 10px; display: none; }
+  .err-msg.show { display: block; }
+
+  /* ---------- Confirmation ---------- */
+  .confirm-icon { font-size: 2.4rem; margin-bottom: 16px; }
+  .confirm-box {
+    border: 1px solid var(--line);
+    background: var(--charcoal);
+    border-radius: 6px;
+    padding: 24px;
+    margin: 22px 0;
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+  .credit-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: var(--charcoal-lift);
+    border: 1px solid var(--tungsten);
+    color: var(--tungsten-hot);
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+  }
+  details.debug { margin-top: 40px; border-top: 1px solid var(--line); padding-top: 16px; }
+  details.debug summary { cursor: pointer; color: var(--ash); font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; }
+  details.debug pre {
+    background: var(--charcoal);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 14px;
+    font-size: 0.76rem;
+    color: var(--paper);
+    overflow-x: auto;
+    margin-top: 10px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+</style>
+</head>
+<body>
+
+<!-- Shown only for the instant it takes to check sessionStorage for a writer
+     profile; if missing, the visitor is redirected to submitter-profile.html
+     rather than duplicating the age-gate/identity step that page already owns. -->
+<div id="session-check">Checking your profile…</div>
+
+<div id="app-main" style="display:none;">
+  <nav>
+    <div class="inner">
+      <div class="brand">The Director<span class="dot">'</span>s Chair</div>
+      <a class="back-link" href="submitter-profile.html">&larr; Back</a>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <div class="progress" id="progress-track"></div>
+
+    <!-- STEP: PATH -->
+    <section class="step" data-step="path">
+      <div class="step-label">Step 1</div>
+      <h2>How do you want in?</h2>
+      <p class="sub">Pick a story we've already got, or bring your own. Either way, if it's chosen, real people play your characters.</p>
+      <div class="path-grid">
+        <button class="path-card" id="choose-preset">
+          <span class="tag">Path A — Preset</span>
+          <h3>Pick a Premise</h3>
+          <p>Choose from 100 ready-made story premises. You still build the full cast and character details yourself — that part's all yours.</p>
+          <div class="price-line">FREE — credited for Characters</div>
+        </button>
+        <button class="path-card" id="choose-original">
+          <span class="tag">Path B — Original</span>
+          <h3>Submit Your Own Idea</h3>
+          <p>Bring your own premise and characters from scratch. Guaranteed read, guaranteed feedback.</p>
+          <div class="price-line">$10.00 — credited for Story &amp; Characters</div>
+        </button>
+      </div>
+    </section>
+
+    <!-- STEP: PRESET BROWSE -->
+    <section class="step" data-step="preset-browse">
+      <div class="step-label">Path A — Step 2</div>
+      <h2>Choose a Premise</h2>
+      <p class="sub">100 premises across 10 genres. Pick the one you want to build a cast for.</p>
+      <div class="genre-tabs" id="genre-tabs"></div>
+      <div class="selected-banner" id="selected-banner">
+        <span class="p-genre" id="sel-genre"></span>
+        <strong id="sel-title"></strong>
+        <span id="sel-logline"></span>
+      </div>
+      <div class="preset-grid" id="preset-grid"></div>
+      <div class="step-nav">
+        <button class="btn btn-ghost" data-back>Back</button>
+        <button class="btn btn-primary" id="preset-continue" disabled>Continue</button>
+      </div>
+    </section>
+
+    <!-- STEP: ORIGINAL PREMISE -->
+    <section class="step" data-step="original-premise">
+      <div class="step-label">Path B — Step 2</div>
+      <h2>Your Premise</h2>
+      <p class="sub">One or two sentences. What's the hook? What's everyone confessing to, or about?</p>
+      <div class="field-group">
+        <label for="orig-premise">Story Premise</label>
+        <div class="field-hint">Keep it tight — a logline, not a full outline.</div>
+        <textarea id="orig-premise" maxlength="500" placeholder="e.g. A small-town book club discovers they've all secretly been reading a different book than the one they claim to have finished."></textarea>
+      </div>
+      <div class="step-nav">
+        <button class="btn btn-ghost" data-back>Back</button>
+        <button class="btn btn-primary" id="premise-continue">Continue</button>
+      </div>
+      <div class="err-msg" id="premise-err">Give us at least a sentence to work with.</div>
+    </section>
+
+    <!-- STEP: CHARACTERS (shared) -->
+    <section class="step" data-step="characters">
+      <div class="step-label" id="char-step-label">Step 3</div>
+      <h2>Build the Cast</h2>
+      <p class="sub">Who's confessing? Give each character a name and a short description of who they are and what they're hiding, wanting, or working through.</p>
+      <div id="char-rows"></div>
+      <button class="add-char-btn" id="add-char">+ Add Another Character</button>
+      <div class="step-nav">
+        <button class="btn btn-ghost" data-back>Back</button>
+        <button class="btn btn-primary" id="char-continue">Continue</button>
+      </div>
+      <div class="err-msg" id="char-err">Every character needs a name and a description before you continue.</div>
+    </section>
+
+    <!-- STEP: CONSENT -->
+    <section class="step" data-step="consent">
+      <div class="step-label" id="consent-step-label">Step 4</div>
+      <h2>Rights &amp; Terms</h2>
+      <p class="sub">Read this before you submit — it governs what happens to your story and how you're credited.</p>
+      <div class="consent-box" id="consent-copy"></div>
+      <div class="check-row">
+        <input type="checkbox" id="consent-check">
+        <label for="consent-check">I've read and agree to the terms above, including the credit and rights terms and, where applicable, the no-refund policy.</label>
+      </div>
+      <div class="step-nav">
+        <button class="btn btn-ghost" data-back>Back</button>
+        <button class="btn btn-primary" id="consent-continue" disabled>Continue</button>
+      </div>
+    </section>
+
+    <!-- STEP: PAYMENT (Path B only) -->
+    <section class="step" data-step="payment">
+      <div class="step-label">Path B — Final Step</div>
+      <h2>Submission Fee</h2>
+      <p class="sub">This confirms your submission and guarantees a full read plus written feedback.</p>
+      <div class="price-card">
+        <div class="price-row"><span>Original Story Submission</span><span class="amt">$10.00</span></div>
+        <div class="fine">Flat fee. No refund if not selected. Not selected submissions move automatically into a 30-day Second Look reconsideration window at no extra cost.</div>
+      </div>
+      <div class="dev-note">🔧 DEV PLACEHOLDER — this button simulates a successful charge. Wire to live Stripe Checkout before this form goes public.</div>
+      <div class="step-nav">
+        <button class="btn btn-ghost" data-back>Back</button>
+        <button class="btn btn-primary" id="pay-continue">Pay $10.00 &amp; Submit</button>
+      </div>
+    </section>
+
+    <!-- STEP: CONFIRMATION -->
+    <section class="step" data-step="confirmation">
+      <div class="confirm-icon">🎬</div>
+      <h2 id="confirm-heading">You're In the Queue</h2>
+      <div class="confirm-box" id="confirm-copy"></div>
+      <details class="debug">
+        <summary>Dev preview — submission payload</summary>
+        <pre id="debug-payload"></pre>
+      </details>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------- Preset Data (100, verified unique) ----------------
+  const PRESETS = [
+    // COMEDY (batch 1)
+    { genre: "Comedy", title: "The Flat Earth Doctor", logline: "A doctor moves to a town where every patient believes the Earth is flat." },
+    { genre: "Comedy", title: "The Worst Employee", logline: "A new employee discovers everyone at the office has been secretly trying to get the same person fired." },
+    { genre: "Comedy", title: "The Town Hero", logline: "A man becomes famous for saving someone from an accident that nobody can prove actually happened." },
+    { genre: "Comedy", title: "The Family Business", logline: "Three siblings inherit a business none of them knows how to run." },
+    { genre: "Comedy", title: "The Normal Guy", logline: "A documentary crew follows the \u201cmost normal man in town\u201d and slowly discovers he is anything but normal." },
+    // HORROR
+    { genre: "Horror", title: "The Empty House", logline: "A couple moves into a house where everyone insists nobody has lived for 30 years." },
+    { genre: "Horror", title: "The Missing Hour", logline: "Everyone in town loses exactly one hour of memory on the same night." },
+    { genre: "Horror", title: "The Basement", logline: "Roommates agree never to open the basement door. Someone keeps claiming they hear conversations coming from inside." },
+    { genre: "Horror", title: "The New Neighbour", logline: "A mysterious neighbour moves in and somehow knows everyone's personal secrets." },
+    { genre: "Horror", title: "The Last Interview", logline: "A documentary crew interviews residents about a man who disappeared years ago, but everyone remembers him differently." },
+    // MYSTERY
+    { genre: "Mystery", title: "The Missing Sign", logline: "A town's giant welcome sign disappears overnight." },
+    { genre: "Mystery", title: "The Anonymous Letters", logline: "Residents start receiving letters describing things they're about to do." },
+    { genre: "Mystery", title: "The Forgotten Person", logline: "Everyone remembers a beloved former resident except there is no evidence the person ever existed." },
+    { genre: "Mystery", title: "The Locked Room", logline: "Something keeps appearing inside a locked community centre." },
+    { genre: "Mystery", title: "Who Took the Money?", logline: "A small-town fundraiser mysteriously loses all its money, and everyone has a different explanation." },
+    // THRILLER
+    { genre: "Thriller", title: "The Watcher", logline: "A man becomes convinced someone is watching him, but everyone thinks he's imagining it." },
+    { genre: "Thriller", title: "The Wrong Package", logline: "A woman receives a package intended for someone who supposedly doesn't exist." },
+    { genre: "Thriller", title: "The New Employee", logline: "An employee discovers everyone at the company knows something about him that he doesn't know himself." },
+    { genre: "Thriller", title: "The Phone Call", logline: "Several residents receive the same strange phone call from an unknown person." },
+    { genre: "Thriller", title: "The Meeting", logline: "Five strangers are invited to a secret meeting and discover they all have something in common." },
+    // ROMANCE
+    { genre: "Romance", title: "The Almost Wedding", logline: "A wedding documentary reveals that nearly everyone involved thinks the couple shouldn't get married." },
+    { genre: "Romance", title: "The Wrong Date", logline: "Two strangers accidentally attend the same blind date and decide to stay anyway." },
+    { genre: "Romance", title: "The Ex Files", logline: "A documentary follows a couple trying to remain friends after breaking up, while everyone around them expects them to reunite." },
+    { genre: "Romance", title: "The Matchmaker", logline: "A self-proclaimed relationship expert tries to find love for everyone except himself." },
+    { genre: "Romance", title: "The Wedding Guest", logline: "A mysterious wedding guest seems to know something about the bride's past." },
+    // SCI-FI
+    { genre: "Sci-Fi", title: "The Alien Town", logline: "Residents claim an alien landed nearby, but every person remembers seeing something completely different." },
+    { genre: "Sci-Fi", title: "Tomorrow's News", logline: "A local journalist begins receiving tomorrow's newspaper today." },
+    { genre: "Sci-Fi", title: "The Replacement", logline: "A man suspects his neighbour has been replaced by an identical person." },
+    { genre: "Sci-Fi", title: "The Time Traveller's Roommate", logline: "A man discovers his roommate keeps disappearing because he is secretly travelling through time." },
+    { genre: "Sci-Fi", title: "The Last Internet Connection", logline: "Everyone's internet suddenly disappears except for one person's phone." },
+    // CRIME
+    { genre: "Crime", title: "The Amateur Heist", logline: "Five ordinary people attempt a robbery while documenting their \u201cprofessional\u201d preparations." },
+    { genre: "Crime", title: "The Missing Necklace", logline: "A valuable necklace disappears during a small-town party, and everyone becomes a suspect." },
+    { genre: "Crime", title: "The Informant", logline: "A seemingly ordinary employee secretly believes he's helping the police solve a major crime." },
+    { genre: "Crime", title: "The Perfect Alibi", logline: "Everyone in town claims to have been somewhere else when a crime occurred." },
+    { genre: "Crime", title: "The Crime Nobody Reported", logline: "A man discovers that everyone knows a crime happened, but nobody wants the police involved." },
+    // DRAMA
+    { genre: "Drama", title: "The Family Meeting", logline: "A family gathers for dinner to discuss one important issue, but every person arrives with a different agenda." },
+    { genre: "Drama", title: "The Last Day", logline: "An employee discovers the company is closing and secretly interviews everyone about what happened." },
+    { genre: "Drama", title: "The Comeback", logline: "A former local celebrity returns home convinced everyone still remembers him." },
+    { genre: "Drama", title: "The Inheritance", logline: "A family discovers their inheritance comes with one unusual condition." },
+    { genre: "Drama", title: "The Reunion", logline: "Old friends reunite after 20 years, and everyone remembers their past completely differently." },
+    // PSYCHOLOGICAL
+    { genre: "Psychological", title: "The Other Version", logline: "A man insists his life used to be completely different, but everyone around him says he's mistaken." },
+    { genre: "Psychological", title: "The Interview", logline: "A documentary interview gradually reveals that the interviewer knows far more about the subject than they should." },
+    { genre: "Psychological", title: "The Neighbourhood", logline: "A woman becomes convinced everyone in her neighbourhood is acting strangely." },
+    { genre: "Psychological", title: "The Memory Test", logline: "Several people are asked to describe the same event, producing completely contradictory stories." },
+    { genre: "Psychological", title: "The Room", logline: "Everyone who enters the same room claims they experienced something different." },
+    // DISASTER/SURVIVAL
+    { genre: "Disaster/Survival", title: "The Apocalypse Committee", logline: "A small-town committee prepares for the end of the world while arguing about absolutely everything." },
+    { genre: "Disaster/Survival", title: "The Storm", logline: "A major storm approaches, and every resident has a completely different survival strategy." },
+    { genre: "Disaster/Survival", title: "The Power Outage", logline: "A town loses electricity for three days and discovers how little anyone actually knows about their neighbours." },
+    { genre: "Disaster/Survival", title: "The Evacuation", logline: "Residents are ordered to leave town, but nobody can agree on why." },
+    { genre: "Disaster/Survival", title: "The Last Grocery Store", logline: "A disaster causes everyone to rush to one grocery store, where the real battle becomes who gets the last supplies." },
+
+    // ---- BATCH 2 ----
+    { genre: "Comedy", title: "The Fake Expert", logline: "A small-town man accidentally becomes famous for advice he completely made up." },
+    { genre: "Comedy", title: "The Neighbourhood Watch", logline: "Residents form a neighbourhood watch, then become obsessed with investigating each other." },
+    { genre: "Comedy", title: "The Restaurant", logline: "A restaurant opens with one problem: none of the employees have ever worked in one." },
+    { genre: "Comedy", title: "The Influencer", logline: "A nobody becomes an influencer after accidentally going viral for the wrong reason." },
+    { genre: "Comedy", title: "The Town Competition", logline: "A town becomes obsessed with winning a competition nobody remembers entering." },
+    { genre: "Horror", title: "The Photograph", logline: "A family discovers an old photograph containing someone nobody recognizes." },
+    { genre: "Horror", title: "The Voice", logline: "Residents begin hearing the same unexplained voice through their phones." },
+    { genre: "Horror", title: "The Visitor", logline: "A stranger arrives in town claiming to have lived there before everyone else." },
+    { genre: "Horror", title: "The Door", logline: "An apartment building has one door nobody is supposed to open." },
+    { genre: "Horror", title: "The Recording", logline: "Someone discovers an old recording containing conversations that haven't happened yet." },
+    { genre: "Mystery", title: "The Empty Chair", logline: "Every week, someone leaves an empty chair at the town hall meeting, and nobody admits why." },
+    { genre: "Mystery", title: "The Missing Birthday", logline: "A woman discovers an entire year of her life seems to have disappeared from everyone's memories." },
+    { genre: "Mystery", title: "The Secret Room", logline: "A community centre renovation reveals a hidden room nobody knew existed." },
+    { genre: "Mystery", title: "The Red Envelope", logline: "Every resident receives an identical red envelope with no explanation." },
+    { genre: "Mystery", title: "The Stranger's List", logline: "A notebook containing the names of everyone in town is discovered, with some names crossed out." },
+    { genre: "Thriller", title: "The Wrong House", logline: "A man repeatedly receives deliveries addressed to a house that isn't his." },
+    { genre: "Thriller", title: "The Group Chat", logline: "Strangers discover they've all been added to the same mysterious group chat." },
+    { genre: "Thriller", title: "The New Boss", logline: "An employee realizes the new boss seems to know everyone's secrets." },
+    { genre: "Thriller", title: "The Countdown", logline: "Five strangers receive phones displaying the same unexplained countdown." },
+    { genre: "Thriller", title: "The Last Message", logline: "A woman receives a message from a friend who disappeared years ago." },
+    { genre: "Romance", title: "The Breakup Coach", logline: "A relationship coach secretly falls for the client he's helping move on." },
+    { genre: "Romance", title: "The Plus-One", logline: "Two strangers agree to pretend to be a couple at a wedding." },
+    { genre: "Romance", title: "The Love Letter", logline: "An anonymous love letter circulates around a small town, and everyone thinks it's meant for them." },
+    { genre: "Romance", title: "The Ex's Wedding", logline: "A man agrees to attend his ex's wedding and accidentally becomes part of the wedding party." },
+    { genre: "Romance", title: "The Dating Experiment", logline: "Six strangers agree to let a documentary crew choose their dates." },
+    { genre: "Sci-Fi", title: "The Duplicate", logline: "A man discovers someone identical to him has been living in another city." },
+    { genre: "Sci-Fi", title: "The Future Visitor", logline: "A stranger claims to be from 20 years in the future and knows everyone's fate." },
+    { genre: "Sci-Fi", title: "The Smart House", logline: "A family discovers their new smart home has started making decisions for them." },
+    { genre: "Sci-Fi", title: "The Glitch", logline: "Residents notice the same strange event happening repeatedly." },
+    { genre: "Sci-Fi", title: "The Last Human", logline: "One person becomes convinced everyone around him is artificial." },
+    { genre: "Crime", title: "The Stolen Trophy", logline: "A priceless local trophy disappears hours before the biggest event of the year." },
+    { genre: "Crime", title: "The Fake Detective", logline: "An ordinary person pretends to be a detective and accidentally gets involved in a real investigation." },
+    { genre: "Crime", title: "The Anonymous Donor", logline: "A mysterious person keeps donating large amounts of money to the town." },
+    { genre: "Crime", title: "The Inside Job", logline: "Employees discover their workplace has been robbed, and the thief must be one of them." },
+    { genre: "Crime", title: "The Confession", logline: "Someone anonymously confesses to a crime nobody knew had happened." },
+    { genre: "Drama", title: "The Last Reunion", logline: "A group of old friends gathers for one final night together." },
+    { genre: "Drama", title: "The Empty Store", logline: "A struggling business owner prepares to close while employees secretly try to save it." },
+    { genre: "Drama", title: "The Secret Will", logline: "A family discovers their late relative left each of them a completely different message." },
+    { genre: "Drama", title: "The Return", logline: "Someone who left town years ago suddenly comes home." },
+    { genre: "Drama", title: "The Photograph Album", logline: "A family looks through an old album and realizes everyone remembers the events differently." },
+    { genre: "Psychological", title: "The Stranger in the Mirror", logline: "A man begins noticing subtle differences between himself and his reflection." },
+    { genre: "Psychological", title: "The Experiment", logline: "Volunteers participate in a harmless-looking social experiment that becomes increasingly strange." },
+    { genre: "Psychological", title: "The Witnesses", logline: "Five people witness the same incident and somehow produce five completely different realities." },
+    { genre: "Psychological", title: "The Routine", logline: "A man's perfectly ordinary daily routine begins changing in tiny ways." },
+    { genre: "Psychological", title: "The Confessional", logline: "Several people are interviewed about the same person, but their descriptions make it seem like they're talking about entirely different individuals." },
+    { genre: "Disaster/Survival", title: "The Quarantine", logline: "A town is temporarily isolated, and residents begin discovering strange things about each other." },
+    { genre: "Disaster/Survival", title: "The Flood", logline: "Rising water traps several strangers inside a local building." },
+    { genre: "Disaster/Survival", title: "The Blackout", logline: "A city-wide blackout leaves one neighbourhood completely cut off." },
+    { genre: "Disaster/Survival", title: "The Emergency Broadcast", logline: "Everyone receives an emergency alert, but nobody can figure out what the emergency actually is." },
+    { genre: "Disaster/Survival", title: "The Evacuation Bus", logline: "A group of strangers boards an evacuation bus, only to discover none of them knows where they're going." }
+  ];
+
+  // ---------------- State ----------------
+  const state = {
+    writer: null,           // { fullName, email, country, ageConfirmed } — from Submitter Profile
+    path: null,             // 'preset' | 'original'
+    selectedPreset: null,
+    originalPremise: "",
+    characters: [],          // [{name, description}]
+    consentChecked: false,
+    submissionId: null,      // set once /submit-story succeeds
+    paid: false
+  };
+
+  const STEP_SEQ = {
+    preset: ["path", "preset-browse", "characters", "consent", "confirmation"],
+    original: ["path", "original-premise", "characters", "consent", "payment", "confirmation"]
+  };
+
+  let currentIndex = 0;
+
+  // ---------------- Writer Session ----------------
+  // Age + identity are collected once, on Submitter Profile. If someone
+  // lands here directly (bookmarked link, back button after clearing
+  // session) without that step, send them there instead of asking again.
+  const appMain = document.getElementById("app-main");
+  const sessionCheck = document.getElementById("session-check");
+
+  (function initSession() {
+    const raw = sessionStorage.getItem("dc_writer");
+    if (!raw) {
+      window.location.href = "submitter-profile.html";
+      return;
+    }
+    try {
+      const writer = JSON.parse(raw);
+      if (!writer.fullName || !writer.email || !writer.ageConfirmed) {
+        window.location.href = "submitter-profile.html";
+        return;
+      }
+      state.writer = writer;
+    } catch {
+      window.location.href = "submitter-profile.html";
+      return;
+    }
+    sessionCheck.style.display = "none";
+    appMain.style.display = "block";
+
+    // Returning from Stripe Checkout: ?submission=<id>&paid=1|0
+    const params = new URLSearchParams(window.location.search);
+    const returningSubmission = params.get("submission");
+    const paidParam = params.get("paid");
+    if (returningSubmission && paidParam === "1") {
+      state.submissionId = returningSubmission;
+      state.paid = true;
+      state.path = "original"; // only Path B ever returns from Stripe
+      currentIndex = STEP_SEQ.original.indexOf("confirmation");
+      renderStep();
+      return;
+    }
+    if (returningSubmission && paidParam === "0") {
+      // Checkout was abandoned/cancelled — the submission row exists but is
+      // unpaid; land back on the payment step so they can retry without
+      // re-entering their premise and cast from scratch.
+      state.submissionId = returningSubmission;
+      state.path = "original";
+      currentIndex = STEP_SEQ.original.indexOf("payment");
+      renderStep();
+      return;
+    }
+
+    renderStep();
+  })();
+
+  // ---------------- Step Rendering ----------------
+  function activeSequence() {
+    return STEP_SEQ[state.path] || ["path"];
+  }
+
+  function renderProgress() {
+    const seq = activeSequence();
+    const track = document.getElementById("progress-track");
+    track.textContent = "";
+    seq.forEach(function (stepName, i) {
+      const seg = document.createElement("div");
+      seg.className = "progress-seg";
+      if (i < currentIndex) seg.classList.add("done");
+      if (i === currentIndex) seg.classList.add("active");
+      track.appendChild(seg);
+    });
+  }
+
+  function showStep(name) {
+    document.querySelectorAll(".step").forEach(function (el) {
+      el.classList.toggle("active", el.getAttribute("data-step") === name);
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function renderStep() {
+    const seq = activeSequence();
+    const name = seq[currentIndex];
+    showStep(name);
+    renderProgress();
+
+    if (name === "characters") {
+      document.getElementById("char-step-label").textContent =
+        state.path === "preset" ? "Path A — Step 3" : "Path B — Step 3";
+      if (state.characters.length === 0) addCharacterRow();
+      renderCharacterRows();
+    }
+    if (name === "consent") {
+      document.getElementById("consent-step-label").textContent =
+        state.path === "preset" ? "Path A — Step 4" : "Path B — Step 4";
+      renderConsentCopy();
+    }
+    if (name === "confirmation") {
+      renderConfirmation();
+    }
+  }
+
+  function goNext() {
+    const seq = activeSequence();
+    if (currentIndex < seq.length - 1) {
+      currentIndex++;
+      renderStep();
+    }
+  }
+  function goBack() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      renderStep();
+    } else {
+      // back from very first step of a path returns to path chooser
+      state.path = null;
+      currentIndex = 0;
+      renderStep();
+    }
+  }
+  document.querySelectorAll("[data-back]").forEach(function (btn) {
+    btn.addEventListener("click", goBack);
+  });
+
+  // ---------------- Step: Path ----------------
+  document.getElementById("choose-preset").addEventListener("click", function () {
+    state.path = "preset";
+    currentIndex = 1;
+    renderStep();
+  });
+  document.getElementById("choose-original").addEventListener("click", function () {
+    state.path = "original";
+    currentIndex = 1;
+    renderStep();
+  });
+
+  // ---------------- Step: Preset Browse ----------------
+  const GENRES = ["All"].concat(Array.from(new Set(PRESETS.map(function (p) { return p.genre; }))));
+  const genreTabsEl = document.getElementById("genre-tabs");
+  let activeGenre = "All";
+
+  GENRES.forEach(function (g) {
+    const tab = document.createElement("button");
+    tab.className = "genre-tab" + (g === "All" ? " active" : "");
+    tab.textContent = g;
+    tab.addEventListener("click", function () {
+      activeGenre = g;
+      Array.from(genreTabsEl.children).forEach(function (t) { t.classList.remove("active"); });
+      tab.classList.add("active");
+      renderPresetGrid();
+    });
+    genreTabsEl.appendChild(tab);
+  });
+
+  function renderPresetGrid() {
+    const grid = document.getElementById("preset-grid");
+    grid.textContent = "";
+    const filtered = activeGenre === "All" ? PRESETS : PRESETS.filter(function (p) { return p.genre === activeGenre; });
+    filtered.forEach(function (preset) {
+      const card = document.createElement("button");
+      card.className = "preset-card";
+      if (state.selectedPreset && state.selectedPreset.title === preset.title) {
+        card.classList.add("selected");
+      }
+      const genreEl = document.createElement("span");
+      genreEl.className = "p-genre";
+      genreEl.textContent = preset.genre;
+      const titleEl = document.createElement("h4");
+      titleEl.textContent = preset.title;
+      const loglineEl = document.createElement("p");
+      loglineEl.textContent = preset.logline;
+      card.appendChild(genreEl);
+      card.appendChild(titleEl);
+      card.appendChild(loglineEl);
+      card.addEventListener("click", function () {
+        state.selectedPreset = preset;
+        document.getElementById("preset-continue").disabled = false;
+        renderPresetGrid();
+        renderSelectedBanner();
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  function renderSelectedBanner() {
+    const banner = document.getElementById("selected-banner");
+    if (!state.selectedPreset) { banner.classList.remove("show"); return; }
+    document.getElementById("sel-genre").textContent = state.selectedPreset.genre;
+    document.getElementById("sel-title").textContent = state.selectedPreset.title;
+    document.getElementById("sel-logline").textContent = state.selectedPreset.logline;
+    banner.classList.add("show");
+  }
+
+  renderPresetGrid();
+
+  document.getElementById("preset-continue").addEventListener("click", function () {
+    if (!state.selectedPreset) return;
+    goNext();
+  });
+
+  // ---------------- Step: Original Premise ----------------
+  document.getElementById("premise-continue").addEventListener("click", function () {
+    const val = document.getElementById("orig-premise").value.trim();
+    const err = document.getElementById("premise-err");
+    if (val.length < 10) {
+      err.classList.add("show");
+      return;
+    }
+    err.classList.remove("show");
+    state.originalPremise = val;
+    goNext();
+  });
+
+  // ---------------- Step: Characters ----------------
+  const charRowsEl = document.getElementById("char-rows");
+
+  function addCharacterRow() {
+    state.characters.push({ name: "", description: "" });
+  }
+
+  function renderCharacterRows() {
+    charRowsEl.textContent = "";
+    state.characters.forEach(function (char, i) {
+      const row = document.createElement("div");
+      row.className = "char-row";
+
+      const head = document.createElement("div");
+      head.className = "char-row-head";
+      const num = document.createElement("span");
+      num.className = "num";
+      num.textContent = "CHARACTER " + (i + 1);
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "remove-char";
+      removeBtn.textContent = "Remove";
+      removeBtn.disabled = state.characters.length <= 1;
+      removeBtn.addEventListener("click", function () {
+        state.characters.splice(i, 1);
+        renderCharacterRows();
+      });
+      head.appendChild(num);
+      head.appendChild(removeBtn);
+
+      const nameGroup = document.createElement("div");
+      nameGroup.className = "field-group";
+      const nameLabel = document.createElement("label");
+      nameLabel.textContent = "Character Name";
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.value = char.name;
+      nameInput.addEventListener("input", function () {
+        state.characters[i].name = nameInput.value;
+      });
+      nameGroup.appendChild(nameLabel);
+      nameGroup.appendChild(nameInput);
+
+      const descGroup = document.createElement("div");
+      descGroup.style.marginBottom = "0";
+      const descLabel = document.createElement("label");
+      descLabel.textContent = "Who Are They? What's Their Confessional About?";
+      const descInput = document.createElement("textarea");
+      descInput.value = char.description;
+      descInput.addEventListener("input", function () {
+        state.characters[i].description = descInput.value;
+      });
+      descGroup.appendChild(descLabel);
+      descGroup.appendChild(descInput);
+
+      row.appendChild(head);
+      row.appendChild(nameGroup);
+      row.appendChild(descGroup);
+      charRowsEl.appendChild(row);
+    });
+  }
+
+  document.getElementById("add-char").addEventListener("click", function () {
+    if (state.characters.length >= 8) return;
+    addCharacterRow();
+    renderCharacterRows();
+  });
+
+  document.getElementById("char-continue").addEventListener("click", function () {
+    const valid = state.characters.every(function (c) {
+      return c.name.trim().length > 0 && c.description.trim().length > 0;
+    });
+    const err = document.getElementById("char-err");
+    if (!valid) {
+      err.classList.add("show");
+      return;
+    }
+    err.classList.remove("show");
+    goNext();
+  });
+
+  // ---------------- Step: Consent ----------------
+  function renderConsentCopy() {
+    const box = document.getElementById("consent-copy");
+    box.textContent = "";
+
+    function addH4(text) {
+      const h = document.createElement("h4");
+      h.textContent = text;
+      box.appendChild(h);
+    }
+    function addP(text) {
+      const p = document.createElement("p");
+      p.textContent = text;
+      box.appendChild(p);
+    }
+
+    addH4("Rights");
+    addP("If your submission is selected, The Director's Chair / The Lazy Creator Company owns the story and all resulting footage outright. This is our channel, our platform, and our edit time.");
+
+    addH4("Compensation");
+    addP("There is no payment for any role in production, ever \u2014 writer or cast. Compensation is credit only: your full name in the YouTube video description and bio credits, on the original upload and anywhere else the film is shared or reposted.");
+
+    if (state.path === "original") {
+      addH4("Credit \u2014 Story & Characters");
+      addP("Because you wrote both the premise and the characters, you'll be credited as \u201cStory & Characters by [Your Name]\u201d if selected.");
+      addH4("Submission Fee & Refunds");
+      addP("Your $10.00 submission fee is flat and non-refundable under any circumstance, and does not convert to credit toward any future submission.");
+      addH4("Second Look");
+      addP("If you're not selected this round, your submission automatically moves into a 30-day Second Look window at no extra cost \u2014 it stays eligible for reconsideration without you doing anything further. If it's still not selected when that window closes, the entry closes permanently. No refund, no credit, no renewal.");
+    } else {
+      addH4("Credit \u2014 Characters");
+      addP("Because this premise is one of our house presets, you'll be credited as \u201cCharacters by [Your Name]\u201d if selected \u2014 the premise itself is credited separately to The Director's Chair.");
+      addH4("No Fee, No Second Look");
+      addP("Path A submissions are always free. If this one isn't selected, there's no reconsideration window \u2014 but you're welcome to pick another preset any time, at no cost.");
+    }
+
+    addH4("Age");
+    const warn = document.createElement("p");
+    warn.className = "warn";
+    warn.textContent = "You've confirmed you're 18 or older. This applies to writers and cast members alike, with no exceptions.";
+    box.appendChild(warn);
+  }
+
+  const consentCheck = document.getElementById("consent-check");
+  consentCheck.addEventListener("change", function () {
+    state.consentChecked = consentCheck.checked;
+    document.getElementById("consent-continue").disabled = !consentCheck.checked;
+  });
+  document.getElementById("consent-continue").addEventListener("click", async function () {
+    if (!state.consentChecked) return;
+    const btn = document.getElementById("consent-continue");
+    const errEl = document.getElementById("consent-submit-err");
+    btn.disabled = true;
+    btn.textContent = "Submitting…";
+    if (errEl) errEl.classList.remove("show");
+
+    try {
+      const res = await fetch("/submit-story", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          writer: state.writer,
+          path: state.path,
+          selectedPreset: state.path === "preset" ? state.selectedPreset : null,
+          originalPremise: state.path === "original" ? state.originalPremise : null,
+          characters: state.characters,
+          consentChecked: state.consentChecked
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Something went wrong submitting your story.");
+
+      state.submissionId = data.submissionId;
+      btn.disabled = false;
+      btn.textContent = "Continue";
+      goNext();
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = "Continue";
+      let box = document.getElementById("consent-submit-err");
+      if (!box) {
+        box = document.createElement("div");
+        box.id = "consent-submit-err";
+        box.className = "err-msg";
+        btn.closest(".step-nav").insertAdjacentElement("afterend", box);
+      }
+      box.textContent = err.message;
+      box.classList.add("show");
+    }
+  });
+
+  // ---------------- Step: Payment (Path B) ----------------
+  document.getElementById("pay-continue").addEventListener("click", async function () {
+    const btn = document.getElementById("pay-continue");
+    btn.disabled = true;
+    btn.textContent = "Redirecting to checkout…";
+    try {
+      const res = await fetch("/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ submissionId: state.submissionId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not start checkout.");
+      window.location.href = data.url; // real Stripe Checkout redirect
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = "Pay $10.00 & Submit";
+      let box = document.getElementById("pay-err");
+      if (!box) {
+        box = document.createElement("div");
+        box.id = "pay-err";
+        box.className = "err-msg show";
+        btn.closest(".step-nav").insertAdjacentElement("afterend", box);
+      }
+      box.textContent = err.message;
+      box.classList.add("show");
+    }
+  });
+
+  // ---------------- Step: Confirmation ----------------
+  async function renderConfirmation() {
+    const copy = document.getElementById("confirm-copy");
+    copy.textContent = "Loading confirmation\u2026";
+
+    // A full-page Stripe redirect wipes in-memory state (selectedPreset,
+    // originalPremise, characters) — if we arrived that way, pull the
+    // authoritative record back from the server instead of showing blanks.
+    let presetTitleForCopy = state.selectedPreset ? state.selectedPreset.title : null;
+    if (state.path === "original" && state.characters.length === 0 && state.submissionId) {
+      try {
+        const res = await fetch("/get-submission?id=" + encodeURIComponent(state.submissionId));
+        const data = await res.json();
+        if (res.ok) {
+          state.paid = !!data.submission.paid;
+        }
+      } catch {
+        // Non-fatal — confirmation copy for Path B doesn't require this
+        // fetch to succeed, it only needed it for the debug payload below.
+      }
+    }
+
+    copy.textContent = "";
+    function addP(text) {
+      const p = document.createElement("p");
+      p.textContent = text;
+      p.style.marginBottom = "10px";
+      copy.appendChild(p);
+    }
+
+    if (state.path === "original") {
+      addP("Your original story is submitted and paid for. You're guaranteed a full read and written feedback.");
+      addP("If it's chosen, you're credited as Story & Characters. If it's not chosen this round, it automatically enters a 30-day Second Look window \u2014 no extra fee, no action needed on your end. After that window, the entry closes for good.");
+      const tag = document.createElement("span");
+      tag.className = "credit-tag";
+      tag.textContent = "Credit if selected: Story & Characters by You";
+      copy.appendChild(tag);
+    } else {
+      addP("Your cast and characters are submitted for \u201c" + presetTitleForCopy + ".\u201d It's free, and you'll hear back with feedback either way.");
+      addP("If it's chosen, you're credited for Characters. Not chosen this round? No cost, no waiting period \u2014 come back and pick another preset any time.");
+      const tag = document.createElement("span");
+      tag.className = "credit-tag";
+      tag.textContent = "Credit if selected: Characters by You";
+      copy.appendChild(tag);
+    }
+
+    const payload = {
+      submissionId: state.submissionId,
+      path: state.path,
+      selectedPreset: state.selectedPreset,
+      originalPremise: state.path === "original" ? state.originalPremise : null,
+      characters: state.characters,
+      consentChecked: state.consentChecked,
+      paid: state.path === "original" ? state.paid : "n/a (free path)"
+    };
+    document.getElementById("debug-payload").textContent = JSON.stringify(payload, null, 2);
+  }
+
+})();
+</script>
+</body>
+</html>

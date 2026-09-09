@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — The Director's Chair</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #0A0908; --charcoal: #17140F; --charcoal-lift: #1F1B14;
+    --line: rgba(242,237,227,0.09); --tungsten: #E8A33D; --tungsten-hot: #F4C468;
+    --tally: #C4432E; --paper: #F2EDE3; --ash: #8A8378;
+    --ok: #4A9D6E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--void); color: var(--paper); font-family: 'Inter', sans-serif; line-height: 1.5; min-height: 100vh; }
+  h1, h2 { font-family: 'Fraunces', serif; font-weight: 500; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  button { font-family: inherit; cursor: pointer; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---- Login ---- */
+  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .login-card { max-width: 380px; width: 100%; border: 1px solid var(--line); background: var(--charcoal); padding: 36px; border-radius: 6px; }
+  .login-card h1 { font-size: 1.4rem; margin-bottom: 6px; }
+  .login-card p { color: var(--ash); font-size: 0.88rem; margin-bottom: 22px; }
+  .login-card input {
+    width: 100%; background: var(--void); border: 1px solid var(--line); color: var(--paper);
+    padding: 12px 14px; border-radius: 4px; font-size: 0.95rem; margin-bottom: 14px;
+  }
+  .login-card input:focus { outline: none; border-color: var(--tungsten); }
+  .btn { padding: 11px 20px; border-radius: 4px; font-weight: 600; font-size: 0.9rem; border: none; width: 100%; }
+  .btn-primary { background: var(--tungsten); color: var(--void); }
+  .btn-primary:hover { background: var(--tungsten-hot); }
+  .btn-primary:disabled { opacity: 0.5; }
+  .login-err { color: var(--tally); font-size: 0.85rem; margin-top: 10px; display: none; }
+  .login-err.show { display: block; }
+
+  /* ---- Dashboard shell ---- */
+  #dashboard { display: none; }
+  #dashboard.show { display: block; }
+  header.top { position: sticky; top: 0; z-index: 20; background: rgba(10,9,8,0.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .brand { font-family: 'Fraunces', serif; font-size: 1.05rem; }
+  .brand .dot { color: var(--tungsten); }
+  .logout-btn { background: transparent; border: 1px solid var(--line); color: var(--ash); padding: 7px 14px; border-radius: 4px; font-size: 0.82rem; }
+  .logout-btn:hover { color: var(--paper); border-color: var(--ash); }
+
+  main { padding: 32px 0 100px; }
+
+  .tabs-row { display: flex; gap: 10px; margin-bottom: 24px; }
+  .main-tab {
+    background: transparent; border: 1px solid var(--line); color: var(--ash);
+    padding: 9px 18px; border-radius: 5px; font-size: 0.9rem; font-weight: 600;
+  }
+  .main-tab.active { background: var(--charcoal-lift); border-color: var(--tungsten); color: var(--paper); }
+
+  .status-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .status-chip {
+    background: transparent; border: 1px solid var(--line); color: var(--ash);
+    padding: 6px 13px; border-radius: 100px; font-size: 0.8rem; font-weight: 600;
+  }
+  .status-chip.active { background: var(--tungsten); border-color: var(--tungsten); color: var(--void); }
+  .status-chip .count { opacity: 0.75; margin-left: 4px; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .empty-state { color: var(--ash); font-size: 0.92rem; padding: 40px 0; text-align: center; }
+
+  /* ---- Submission card ---- */
+  .sub-card, .app-card {
+    border: 1px solid var(--line); background: var(--charcoal); border-radius: 6px;
+    padding: 22px; margin-bottom: 16px;
+  }
+  .sub-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+  .sub-writer { font-family: 'Fraunces', serif; font-size: 1.15rem; }
+  .sub-writer-meta { color: var(--ash); font-size: 0.82rem; margin-top: 3px; }
+  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 3px; border: 1px solid var(--line);
+  }
+  .badge-path-preset { color: var(--tungsten); border-color: var(--tungsten); }
+  .badge-path-original { color: var(--tungsten-hot); border-color: var(--tungsten-hot); }
+  .badge-status-pending_review { color: var(--ash); }
+  .badge-status-second_look { color: var(--tally); border-color: var(--tally); }
+  .badge-status-selected { color: var(--ok); border-color: var(--ok); }
+  .badge-status-closed { color: var(--ash); opacity: 0.7; }
+  .badge-unpaid { color: var(--tally); border-color: var(--tally); }
+
+  .sub-premise { font-family: 'Fraunces', serif; font-style: italic; font-size: 1.02rem; margin-bottom: 14px; line-height: 1.5; }
+  .sub-preset-tag { color: var(--tungsten-hot); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; margin-bottom: 6px; display: block; }
+
+  .char-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .char-item { border-left: 2px solid var(--line); padding-left: 12px; }
+  .char-item .cname { font-weight: 600; font-size: 0.92rem; }
+  .char-item .cdesc { color: var(--ash); font-size: 0.85rem; margin-top: 2px; }
+
+  .second-look-note { color: var(--tally); font-size: 0.8rem; margin-bottom: 14px; }
+
+  .feedback-area {
+    width: 100%; background: var(--void); border: 1px solid var(--line); color: var(--paper);
+    padding: 10px 12px; border-radius: 4px; font-size: 0.87rem; min-height: 60px; margin-bottom: 12px; font-family: inherit;
+  }
+  .feedback-area:focus { outline: none; border-color: var(--tungsten); }
+
+  .action-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .action-btn { padding: 9px 16px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--line); background: transparent; color: var(--paper); }
+  .action-btn.select { border-color: var(--ok); color: var(--ok); }
+  .action-btn.select:hover { background: rgba(74,157,110,0.1); }
+  .action-btn.not-selected { border-color: var(--tally); color: var(--tally); }
+  .action-btn.not-selected:hover { background: rgba(196,67,46,0.1); }
+  .action-btn.close { color: var(--ash); }
+  .action-btn.close:hover { color: var(--paper); border-color: var(--ash); }
+  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ---- Casting applicant card ---- */
+  .app-card-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+  .app-title { font-family: 'Fraunces', serif; font-size: 1.05rem; }
+  .app-meta { color: var(--ash); font-size: 0.85rem; margin-top: 4px; }
+  .handle-tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 14px; }
+  .handle-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--tungsten-hot); border: 1px solid var(--line); padding: 3px 9px; border-radius: 100px; }
+  .status-select {
+    background: var(--void); border: 1px solid var(--line); color: var(--paper);
+    padding: 8px 12px; border-radius: 4px; font-size: 0.85rem;
+  }
+
+  .loading-row { color: var(--ash); font-size: 0.85rem; text-align: center; padding: 30px; }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <h1>The Director's <span style="color:var(--tungsten)">Chair</span></h1>
+    <p>Admin — enter the password to see everything.</p>
+    <input type="password" id="password-input" placeholder="Password" autocomplete="current-password">
+    <button class="btn btn-primary" id="login-btn">Enter</button>
+    <div class="login-err" id="login-err">Incorrect password.</div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <header class="top">
+    <div class="wrap">
+      <div class="brand">The Director<span class="dot">'</span>s Chair <span class="mono" style="color:var(--ash); font-size:0.75rem;">/ ADMIN</span></div>
+      <button class="logout-btn" id="logout-btn">Log out</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="tabs-row">
+      <button class="main-tab active" data-tab="submissions">Submissions</button>
+      <button class="main-tab" data-tab="casting">Casting Applicants</button>
+    </div>
+
+    <!-- ===== SUBMISSIONS PANEL ===== -->
+    <section class="panel active" id="panel-submissions">
+      <div class="status-filters" id="sub-filters"></div>
+      <div id="sub-list"><div class="loading-row">Loading submissions…</div></div>
+    </section>
+
+    <!-- ===== CASTING PANEL ===== -->
+    <section class="panel" id="panel-casting">
+      <div class="status-filters" id="app-filters"></div>
+      <div id="app-list"><div class="loading-row">Loading applicants…</div></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  let adminToken = sessionStorage.getItem("dc_admin_token") || null;
+  let subStatusFilter = "all";
+  let appStatusFilter = "all";
+  let allSubmissions = [];
+  let allApplicants = [];
+
+  const loginScreen = document.getElementById("login-screen");
+  const dashboard = document.getElementById("dashboard");
+
+  function showDashboard() {
+    loginScreen.style.display = "none";
+    dashboard.classList.add("show");
+    loadSubmissions();
+    loadApplicants();
+  }
+
+  if (adminToken) showDashboard();
+
+  document.getElementById("login-btn").addEventListener("click", attemptLogin);
+  document.getElementById("password-input").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") attemptLogin();
+  });
+
+  async function attemptLogin() {
+    const pw = document.getElementById("password-input").value;
+    const btn = document.getElementById("login-btn");
+    const err = document.getElementById("login-err");
+    btn.disabled = true;
+    btn.textContent = "Checking…";
+    err.classList.remove("show");
+    try {
+      const res = await fetch("/admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pw })
+      });
+      if (!res.ok) throw new Error();
+      adminToken = pw;
+      sessionStorage.setItem("dc_admin_token", pw);
+      showDashboard();
+    } catch {
+      err.classList.add("show");
+      btn.disabled = false;
+      btn.textContent = "Enter";
+    }
+  }
+
+  document.getElementById("logout-btn").addEventListener("click", function () {
+    sessionStorage.removeItem("dc_admin_token");
+    adminToken = null;
+    dashboard.classList.remove("show");
+    loginScreen.style.display = "flex";
+  });
+
+  // ---------------- Tabs ----------------
+  document.querySelectorAll(".main-tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      document.querySelectorAll(".main-tab").forEach(function (t) { t.classList.remove("active"); });
+      tab.classList.add("active");
+      const target = tab.dataset.tab;
+      document.querySelectorAll(".panel").forEach(function (p) { p.classList.remove("active"); });
+      document.getElementById("panel-" + target).classList.add("active");
+    });
+  });
+
+  async function adminFetch(url, options) {
+    options = options || {};
+    options.headers = Object.assign({}, options.headers, {
+      "Authorization": "Bearer " + adminToken,
+      "Content-Type": "application/json"
+    });
+    const res = await fetch(url, options);
+    if (res.status === 401) {
+      sessionStorage.removeItem("dc_admin_token");
+      adminToken = null;
+      dashboard.classList.remove("show");
+      loginScreen.style.display = "flex";
+      throw new Error("Session expired.");
+    }
+    return res;
+  }
+
+  // ---------------- Submissions ----------------
+  const SUB_STATUSES = [
+    { key: "all", label: "All" },
+    { key: "pending_review", label: "Pending Review" },
+    { key: "second_look", label: "Second Look" },
+    { key: "selected", label: "Selected" },
+    { key: "closed", label: "Closed" }
+  ];
+
+  function renderSubFilters() {
+    const el = document.getElementById("sub-filters");
+    el.textContent = "";
+    SUB_STATUSES.forEach(function (s) {
+      const count = s.key === "all" ? allSubmissions.length : allSubmissions.filter(function (x) { return x.status === s.key; }).length;
+      const chip = document.createElement("button");
+      chip.className = "status-chip" + (subStatusFilter === s.key ? " active" : "");
+      chip.innerHTML = ""; // build via textContent-safe nodes
+      const label = document.createTextNode(s.label + " ");
+      const countSpan = document.createElement("span");
+      countSpan.className = "count";
+      countSpan.textContent = "(" + count + ")";
+      chip.appendChild(label);
+      chip.appendChild(countSpan);
+      chip.addEventListener("click", function () {
+        subStatusFilter = s.key;
+        renderSubFilters();
+        renderSubList();
+      });
+      el.appendChild(chip);
+    });
+  }
+
+  async function loadSubmissions() {
+    try {
+      const res = await adminFetch("/admin-list-submissions?status=all&includeUnpaid=1");
+      const data = await res.json();
+      allSubmissions = data.submissions || [];
+      renderSubFilters();
+      renderSubList();
+    } catch (e) {
+      document.getElementById("sub-list").innerHTML = "";
+      const err = document.createElement("div");
+      err.className = "empty-state";
+      err.textContent = "Could not load submissions: " + e.message;
+      document.getElementById("sub-list").appendChild(err);
+    }
+  }
+
+  function daysLeft(expiresAt) {
+    if (!expiresAt) return null;
+    const ms = new Date(expiresAt).getTime() - Date.now();
+    return Math.ceil(ms / (1000 * 60 * 60 * 24));
+  }
+
+  function renderSubList() {
+    const listEl = document.getElementById("sub-list");
+    listEl.textContent = "";
+    const filtered = subStatusFilter === "all" ? allSubmissions : allSubmissions.filter(function (s) { return s.status === subStatusFilter; });
+
+    if (filtered.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "Nothing here.";
+      listEl.appendChild(empty);
+      return;
+    }
+
+    filtered.forEach(function (sub) {
+      const card = document.createElement("div");
+      card.className = "sub-card";
+
+      const top = document.createElement("div");
+      top.className = "sub-card-top";
+
+      const writerBlock = document.createElement("div");
+      const writerName = document.createElement("div");
+      writerName.className = "sub-writer";
+      writerName.textContent = sub.writer_name;
+      const writerMeta = document.createElement("div");
+      writerMeta.className = "sub-writer-meta";
+      writerMeta.textContent = sub.writer_email + (sub.writer_country ? " · " + sub.writer_country : "");
+      writerBlock.appendChild(writerName);
+      writerBlock.appendChild(writerMeta);
+
+      const badgeRow = document.createElement("div");
+      badgeRow.className = "badge-row";
+      const pathBadge = document.createElement("span");
+      pathBadge.className = "badge badge-path-" + sub.path;
+      pathBadge.textContent = sub.path === "original" ? "Path B — Original" : "Path A — Preset";
+      badgeRow.appendChild(pathBadge);
+
+      const statusBadge = document.createElement("span");
+      statusBadge.className = "badge badge-status-" + sub.status;
+      statusBadge.textContent = sub.status.replace("_", " ");
+      badgeRow.appendChild(statusBadge);
+
+      if (sub.path === "original" && !sub.paid) {
+        const unpaidBadge = document.createElement("span");
+        unpaidBadge.className = "badge badge-unpaid";
+        unpaidBadge.textContent = "Unpaid — abandoned checkout";
+        badgeRow.appendChild(unpaidBadge);
+      }
+
+      top.appendChild(writerBlock);
+      top.appendChild(badgeRow);
+      card.appendChild(top);
+
+      if (sub.path === "preset") {
+        const tag = document.createElement("span");
+        tag.className = "sub-preset-tag";
+        tag.textContent = (sub.preset_genre || "") + " — Preset: " + sub.preset_title;
+        card.appendChild(tag);
+      } else {
+        const premise = document.createElement("p");
+        premise.className = "sub-premise";
+        premise.textContent = "\u201c" + sub.original_premise + "\u201d";
+        card.appendChild(premise);
+      }
+
+      if (sub.status === "second_look" && sub.second_look_expires) {
+        const dl = daysLeft(sub.second_look_expires);
+        const note = document.createElement("div");
+        note.className = "second-look-note";
+        note.textContent = dl !== null && dl >= 0
+          ? "Second Look — " + dl + " day" + (dl === 1 ? "" : "s") + " remaining before this closes automatically."
+          : "Second Look window has passed — will close on the next daily sweep.";
+        card.appendChild(note);
+      }
+
+      const charList = document.createElement("div");
+      charList.className = "char-list";
+      (sub.characters || []).forEach(function (c) {
+        const item = document.createElement("div");
+        item.className = "char-item";
+        const name = document.createElement("div");
+        name.className = "cname";
+        name.textContent = c.name;
+        const desc = document.createElement("div");
+        desc.className = "cdesc";
+        desc.textContent = c.description;
+        item.appendChild(name);
+        item.appendChild(desc);
+        charList.appendChild(item);
+      });
+      card.appendChild(charList);
+
+      const feedback = document.createElement("textarea");
+      feedback.className = "feedback-area";
+      feedback.placeholder = "Feedback for the writer (sent either way)…";
+      feedback.value = sub.feedback_text || "";
+      card.appendChild(feedback);
+
+      const actions = document.createElement("div");
+      actions.className = "action-row";
+
+      const canAct = sub.status === "pending_review" || sub.status === "second_look";
+      const selectBtn = document.createElement("button");
+      selectBtn.className = "action-btn select";
+      selectBtn.textContent = "Select";
+      selectBtn.disabled = !canAct;
+      selectBtn.addEventListener("click", function () { updateSubmission(sub.id, "select", feedback.value); });
+
+      const notSelectedBtn = document.createElement("button");
+      notSelectedBtn.className = "action-btn not-selected";
+      notSelectedBtn.textContent = sub.status === "second_look" ? "Still Not Selected" : "Not Selected";
+      notSelectedBtn.disabled = !canAct;
+      notSelectedBtn.addEventListener("click", function () { updateSubmission(sub.id, "not_selected", feedback.value); });
+
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "action-btn close";
+      closeBtn.textContent = "Close";
+      closeBtn.disabled = sub.status === "closed";
+      closeBtn.addEventListener("click", function () { updateSubmission(sub.id, "close", feedback.value); });
+
+      actions.appendChild(selectBtn);
+      actions.appendChild(notSelectedBtn);
+      actions.appendChild(closeBtn);
+      card.appendChild(actions);
+
+      listEl.appendChild(card);
+    });
+  }
+
+  async function updateSubmission(id, action, feedback) {
+    try {
+      await adminFetch("/admin-update-submission", {
+        method: "POST",
+        body: JSON.stringify({ submissionId: id, action: action, feedback: feedback || null })
+      });
+      await loadSubmissions();
+    } catch (e) {
+      alert("Could not update submission: " + e.message);
+    }
+  }
+
+  // ---------------- Casting Applicants ----------------
+  const APP_STATUSES = [
+    { key: "all", label: "All" },
+    { key: "applied", label: "Applied" },
+    { key: "shortlisted", label: "Shortlisted" },
+    { key: "cast", label: "Cast" },
+    { key: "passed", label: "Passed" }
+  ];
+
+  function renderAppFilters() {
+    const el = document.getElementById("app-filters");
+    el.textContent = "";
+    APP_STATUSES.forEach(function (s) {
+      const count = s.key === "all" ? allApplicants.length : allApplicants.filter(function (x) { return x.status === s.key; }).length;
+      const chip = document.createElement("button");
+      chip.className = "status-chip" + (appStatusFilter === s.key ? " active" : "");
+      const label = document.createTextNode(s.label + " ");
+      const countSpan = document.createElement("span");
+      countSpan.className = "count";
+      countSpan.textContent = "(" + count + ")";
+      chip.appendChild(label);
+      chip.appendChild(countSpan);
+      chip.addEventListener("click", function () {
+        appStatusFilter = s.key;
+        renderAppFilters();
+        renderAppList();
+      });
+      el.appendChild(chip);
+    });
+  }
+
+  async function loadApplicants() {
+    try {
+      const res = await adminFetch("/admin-list-casting?status=all");
+      const data = await res.json();
+      allApplicants = data.applicants || [];
+      renderAppFilters();
+      renderAppList();
+    } catch (e) {
+      document.getElementById("app-list").innerHTML = "";
+      const err = document.createElement("div");
+      err.className = "empty-state";
+      err.textContent = "Could not load applicants: " + e.message;
+      document.getElementById("app-list").appendChild(err);
+    }
+  }
+
+  function renderAppList() {
+    const listEl = document.getElementById("app-list");
+    listEl.textContent = "";
+    const filtered = appStatusFilter === "all" ? allApplicants : allApplicants.filter(function (a) { return a.status === appStatusFilter; });
+
+    if (filtered.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "Nothing here.";
+      listEl.appendChild(empty);
+      return;
+    }
+
+    filtered.forEach(function (app) {
+      const card = document.createElement("div");
+      card.className = "app-card";
+
+      const top = document.createElement("div");
+      top.className = "app-card-top";
+
+      const infoBlock = document.createElement("div");
+      const title = document.createElement("div");
+      title.className = "app-title";
+      title.textContent = app.city + ", " + app.country;
+      const meta = document.createElement("div");
+      meta.className = "app-meta";
+      meta.textContent = app.age + " · " + app.gender + " · " + app.email;
+      infoBlock.appendChild(title);
+      infoBlock.appendChild(meta);
+
+      const select = document.createElement("select");
+      select.className = "status-select";
+      APP_STATUSES.filter(function (s) { return s.key !== "all"; }).forEach(function (s) {
+        const opt = document.createElement("option");
+        opt.value = s.key;
+        opt.textContent = s.label;
+        if (app.status === s.key) opt.selected = true;
+        select.appendChild(opt);
+      });
+      select.addEventListener("change", function () {
+        updateApplicant(app.id, select.value);
+      });
+
+      top.appendChild(infoBlock);
+      top.appendChild(select);
+      card.appendChild(top);
+
+      const handles = document.createElement("div");
+      handles.className = "handle-tags";
+      (app.handles || []).forEach(function (h) {
+        const tag = document.createElement("span");
+        tag.className = "handle-tag";
+        tag.textContent = h.platform + ": " + h.handle;
+        handles.appendChild(tag);
+      });
+      card.appendChild(handles);
+
+      listEl.appendChild(card);
+    });
+  }
+
+  async function updateApplicant(id, status) {
+    try {
+      await adminFetch("/admin-update-casting", {
+        method: "POST",
+        body: JSON.stringify({ applicantId: id, status: status })
+      });
+      await loadApplicants();
+    } catch (e) {
+      alert("Could not update applicant: " + e.message);
+    }
+  }
+
+})();
+</script>
+</body>
+</html>

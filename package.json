@@ -1,0 +1,13 @@
+{
+  "name": "the-directors-chair",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@netlify/database": "*",
+    "@netlify/blobs": "*",
+    "stripe": "^17"
+  },
+  "devDependencies": {
+    "@netlify/functions": "*"
+  }
+}

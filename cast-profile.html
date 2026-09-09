@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apply to Be Cast — The Director's Chair</title>
+<meta name="description" content="Apply to be cast in a confessional-cast short film.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #0A0908;
+    --charcoal: #17140F;
+    --charcoal-lift: #1F1B14;
+    --line: rgba(242,237,227,0.09);
+    --tungsten: #E8A33D;
+    --tungsten-hot: #F4C468;
+    --tally: #C4432E;
+    --paper: #F2EDE3;
+    --ash: #8A8378;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--void);
+    color: var(--paper);
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  h1, h2 { font-family: 'Fraunces', serif; font-weight: 500; letter-spacing: -0.01em; }
+  a { color: inherit; text-decoration: none; }
+
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 24px; }
+
+  nav {
+    background: rgba(10,9,8,0.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav .inner {
+    max-width: 1040px; margin: 0 auto; padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between; height: 64px;
+  }
+  .brand { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 500; }
+  .brand .dot { color: var(--tungsten); }
+  .back-link { color: var(--ash); font-size: 0.88rem; }
+  .back-link:hover { color: var(--paper); }
+
+  main { padding: 64px 0 100px; }
+
+  .slate {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--ash);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 6px 12px;
+    margin-bottom: 26px;
+  }
+  .slate .rec {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--tungsten);
+    box-shadow: 0 0 8px rgba(232,163,61,0.7);
+  }
+
+  h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); margin-bottom: 14px; max-width: 16ch; }
+  .lede { color: var(--ash); font-size: 1.02rem; max-width: 50ch; margin-bottom: 46px; line-height: 1.6; }
+
+  form { display: flex; flex-direction: column; gap: 26px; }
+
+  .field label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--paper);
+    margin-bottom: 8px;
+  }
+  .field .hint {
+    font-size: 0.8rem;
+    color: var(--ash);
+    margin-top: 6px;
+  }
+  .field input, .field select {
+    width: 100%;
+    background: var(--charcoal);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    color: var(--paper);
+    padding: 13px 14px;
+    font-size: 0.98rem;
+    font-family: inherit;
+  }
+  .field input::placeholder { color: var(--ash); opacity: 0.7; }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--tungsten);
+  }
+  .field select { appearance: none; cursor: pointer; }
+  .field.select-wrap { position: relative; }
+  .field.select-wrap::after {
+    content: "";
+    position: absolute;
+    right: 16px; top: 41px;
+    width: 8px; height: 8px;
+    border-right: 1px solid var(--ash);
+    border-bottom: 1px solid var(--ash);
+    transform: rotate(45deg);
+    pointer-events: none;
+  }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+  /* gender toggle */
+  .gender-toggle { display: flex; gap: 10px; }
+  .gender-option {
+    flex: 1;
+    border: 1px solid var(--line);
+    background: var(--charcoal);
+    border-radius: 3px;
+    padding: 13px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--ash);
+  }
+  .gender-option.active {
+    border-color: var(--tungsten);
+    color: var(--paper);
+    background: var(--charcoal-lift);
+  }
+  .gender-option.active::before {
+    content: "●  ";
+    color: var(--tungsten);
+    font-size: 0.6rem;
+  }
+
+  /* social handles */
+  .handle-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .handle-row select { flex: 0 0 130px; }
+  .handle-row input { flex: 1; }
+  .handle-remove {
+    flex: 0 0 44px;
+    background: rgba(196,67,46,0.1);
+    border: 1px solid rgba(196,67,46,0.35);
+    color: var(--tally);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  .add-handle {
+    background: transparent;
+    border: 1px dashed var(--line);
+    color: var(--ash);
+    border-radius: 3px;
+    padding: 11px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-align: left;
+  }
+  .add-handle:hover { border-color: var(--tungsten); color: var(--tungsten-hot); }
+
+  .submit-row { margin-top: 12px; }
+  .btn-primary {
+    background: var(--tungsten);
+    color: var(--void);
+    font-weight: 600;
+    padding: 15px 28px;
+    border-radius: 3px;
+    font-size: 0.98rem;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+  }
+  .btn-primary:disabled { opacity: 0.5; cursor: default; }
+  .form-fine {
+    color: var(--ash);
+    font-size: 0.8rem;
+    margin-top: 14px;
+    line-height: 1.55;
+  }
+
+  .error-msg {
+    color: var(--tally);
+    font-size: 0.82rem;
+    margin-top: 6px;
+    display: none;
+  }
+  .field.invalid input, .field.invalid select { border-color: var(--tally); }
+  .field.invalid .error-msg { display: block; }
+
+  @media (max-width: 560px) {
+    .row2 { grid-template-columns: 1fr; }
+    .handle-row { flex-wrap: wrap; }
+    .handle-row select { flex: 1 1 100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <div class="brand">The Director<span class="dot">'</span>s Chair</div>
+    <a class="back-link" href="index.html">&larr; Back</a>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+    <div class="slate"><span class="rec"></span>SCENE 2 &middot; CASTING PROFILE</div>
+    <h1>Apply to be cast.</h1>
+    <p class="lede">This is what casting calls actually match against — who you are, where you are, and how to reach you if a role fits. Takes about a minute.</p>
+
+    <form id="profileForm" novalidate>
+      <div class="row2">
+        <div class="field select-wrap" id="field-country">
+          <label for="country">Country</label>
+          <select id="country" required>
+            <option value="" disabled selected>Select country</option>
+            <option>United States</option>
+            <option>Canada</option>
+            <option>United Kingdom</option>
+            <option>Ireland</option>
+            <option>Australia</option>
+            <option>New Zealand</option>
+            <option>Germany</option>
+            <option>France</option>
+            <option>Netherlands</option>
+            <option>Spain</option>
+            <option>Italy</option>
+            <option>Sweden</option>
+            <option>Norway</option>
+            <option>Denmark</option>
+            <option>Poland</option>
+            <option>Mexico</option>
+            <option>Brazil</option>
+            <option>South Africa</option>
+            <option>India</option>
+            <option>Philippines</option>
+            <option>Japan</option>
+            <option>South Korea</option>
+            <option>Singapore</option>
+            <option>Other</option>
+          </select>
+          <div class="error-msg">Select a country.</div>
+        </div>
+
+        <div class="field" id="field-city">
+          <label for="city">City</label>
+          <input type="text" id="city" placeholder="e.g. Guelph" required>
+          <div class="error-msg">Enter your city.</div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field" id="field-age">
+          <label for="age">Age</label>
+          <input type="number" id="age" min="18" max="100" placeholder="18+" required>
+          <div class="hint">Must be 18 or older to submit a profile.</div>
+          <div class="error-msg">Enter a valid age (18+).</div>
+        </div>
+
+        <div class="field" id="field-gender">
+          <label>Gender</label>
+          <div class="gender-toggle">
+            <div class="gender-option" data-value="Male">Male</div>
+            <div class="gender-option" data-value="Female">Female</div>
+          </div>
+          <div class="error-msg">Select one.</div>
+        </div>
+      </div>
+
+      <div class="field" id="field-email">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@email.com" required>
+        <div class="error-msg">Enter a valid email address.</div>
+      </div>
+
+      <div class="field" id="field-handles">
+        <label>Social Media Handles</label>
+        <div id="handlesList"></div>
+        <button type="button" class="add-handle" id="addHandleBtn">+ Add another handle</button>
+        <div class="hint">At least one handle helps us verify you're a real person before casting.</div>
+        <div class="error-msg">Add at least one social handle.</div>
+      </div>
+
+      <div class="submit-row">
+        <button type="submit" class="btn-primary">Submit Casting Application</button>
+        <p class="form-fine">By continuing, you agree that if cast, footage you submit may be edited and published publicly. You can delete your profile at any time.</p>
+      </div>
+    </form>
+
+    <div id="confirmState" style="display:none;">
+      <div class="slate"><span class="rec"></span>APPLICATION RECEIVED</div>
+      <h1>You're in the pool.</h1>
+      <p class="lede">Your casting profile is on file. When a story matching your age, gender, or location goes to casting, you'll hear from us directly at the email you gave.</p>
+      <a class="btn-primary" href="index.html" style="display:inline-block; width:auto; text-decoration:none;">Back to Home</a>
+    </div>
+  </div>
+</main>
+
+<script>
+let handleCount = 0;
+
+function addHandleRow(platform, value) {
+  handleCount++;
+  const row = document.createElement('div');
+  row.className = 'handle-row';
+  row.id = 'handle-' + handleCount;
+
+  const select = document.createElement('select');
+  ['Instagram', 'TikTok', 'YouTube', 'Twitter/X', 'Other'].forEach(p => {
+    const opt = document.createElement('option');
+    opt.textContent = p;
+    if (p === platform) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = '@handle';
+  input.value = value || '';
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'handle-remove';
+  removeBtn.textContent = '\u00d7';
+  removeBtn.addEventListener('click', () => {
+    row.remove();
+    clearError('field-handles');
+  });
+
+  row.appendChild(select);
+  row.appendChild(input);
+  row.appendChild(removeBtn);
+  document.getElementById('handlesList').appendChild(row);
+}
+
+addHandleRow('Instagram', '');
+document.getElementById('addHandleBtn').addEventListener('click', () => addHandleRow());
+
+// Gender toggle
+document.querySelectorAll('.gender-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    document.querySelectorAll('.gender-option').forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+    clearError('field-gender');
+  });
+});
+
+function getSelectedGender() {
+  const active = document.querySelector('.gender-option.active');
+  return active ? active.dataset.value : null;
+}
+
+function getHandles() {
+  return Array.from(document.querySelectorAll('.handle-row')).map(row => ({
+    platform: row.querySelector('select').value,
+    handle: row.querySelector('input').value.trim()
+  })).filter(h => h.handle);
+}
+
+function setError(fieldId, hasError) {
+  const field = document.getElementById(fieldId);
+  field.classList.toggle('invalid', hasError);
+}
+function clearError(fieldId) {
+  setError(fieldId, false);
+}
+
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  let valid = true;
+
+  const country = document.getElementById('country').value;
+  setError('field-country', !country);
+  if (!country) valid = false;
+
+  const city = document.getElementById('city').value.trim();
+  setError('field-city', !city);
+  if (!city) valid = false;
+
+  const age = parseInt(document.getElementById('age').value, 10);
+  const ageInvalid = !age || age < 18 || age > 100;
+  setError('field-age', ageInvalid);
+  if (ageInvalid) valid = false;
+
+  const gender = getSelectedGender();
+  setError('field-gender', !gender);
+  if (!gender) valid = false;
+
+  const email = document.getElementById('email').value.trim();
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  setError('field-email', !emailValid);
+  if (!emailValid) valid = false;
+
+  const handles = getHandles();
+  setError('field-handles', handles.length === 0);
+  if (handles.length === 0) valid = false;
+
+  if (!valid) {
+    document.querySelector('.field.invalid').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  const application = { country, city, age, gender, email, handles };
+  const submitBtn = document.querySelector('#profileForm button[type="submit"]');
+  const originalLabel = submitBtn.textContent;
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Submitting…';
+
+  try {
+    const res = await fetch('/submit-casting', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(application)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Something went wrong submitting your application.');
+    }
+    document.getElementById('profileForm').style.display = 'none';
+    document.getElementById('confirmState').style.display = 'block';
+  } catch (err) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalLabel;
+    let errBox = document.getElementById('submitError');
+    if (!errBox) {
+      errBox = document.createElement('p');
+      errBox.id = 'submitError';
+      errBox.style.color = 'var(--tally)';
+      errBox.style.fontSize = '0.85rem';
+      errBox.style.marginTop = '10px';
+      submitBtn.insertAdjacentElement('afterend', errBox);
+    }
+    errBox.textContent = err.message || 'Something went wrong. Please try again.';
+  }
+});
+</script>
+
+</body>
+</html>
