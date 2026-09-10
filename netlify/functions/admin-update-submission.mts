@@ -1,6 +1,7 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "./lib/db.mts";
 import { requireAdmin } from "./lib/auth.mts";
+import { sendEmail, emailShell } from "./lib/email.mts";
 
 // POST /admin-update-submission
 // Body: { submissionId, action: "select" | "not_selected" | "close", feedback?: string }
@@ -76,6 +77,36 @@ export default async (req: Request, context: Context) => {
   }
 
   const [updated] = await database.sql`SELECT * FROM submissions WHERE id = ${submissionId}`;
+
+  // Guarded on the pre-update status, not the post-update one — this is
+  // what makes it safe against an admin clicking "select" twice on the
+  // same submission (or clicking it after it was already selected some
+  // other way). Only a genuine pending_review/second_look -> selected
+  // transition should ever notify.
+  if (action === "select" && current.status !== "selected") {
+    const [writer] = await database.sql`SELECT full_name, email FROM writers WHERE id = ${updated.writer_id} LIMIT 1`;
+    if (writer) {
+      const origin = new URL(req.url).origin;
+      const statusUrl = `${origin}/status.html?id=${submissionId}`;
+      const what = updated.path === "original" ? updated.original_premise : updated.preset_title;
+
+      await sendEmail({
+        to: { email: writer.email, name: writer.full_name },
+        subject: "You've been selected — The Director's Chair",
+        htmlContent: emailShell(`
+          <p style="color:#F2EDE3; font-size:16px; margin-bottom:16px;">Hi ${writer.full_name},</p>
+          <p style="color:#F2EDE3; font-size:15px; line-height:1.6; margin-bottom:16px;">
+            Your submission was selected. <strong>${what}</strong> is going into production.
+          </p>
+          <p style="color:#8A8378; font-size:14px; line-height:1.6; margin-bottom:20px;">
+            You'll be credited as <strong style="color:#E8A33D;">${updated.credit_line} ${writer.full_name}</strong> once the film is released. Casting is handled separately from here — no action needed on your end.
+          </p>
+          <a href="${statusUrl}" style="display:inline-block; background:#E8A33D; color:#0A0908; padding:12px 22px; border-radius:4px; font-weight:600; font-size:14px;">View status</a>
+        `)
+      }).catch((err) => console.error("admin-update-submission: selected email failed", err));
+    }
+  }
+
   return new Response(JSON.stringify({ submission: updated }), {
     status: 200,
     headers: { "content-type": "application/json" }

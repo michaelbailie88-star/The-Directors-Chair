@@ -42,9 +42,12 @@
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--line);
   }
-  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; position: relative; }
   .brand { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 500; }
   .brand .dot { color: var(--tungsten); }
+  .nav-links { display: flex; align-items: center; gap: 22px; }
+  .nav-link { color: var(--ash); font-size: 0.88rem; font-weight: 500; }
+  .nav-link:hover { color: var(--paper); }
   .nav-cta {
     background: var(--tungsten);
     color: var(--void);
@@ -52,6 +55,16 @@
     font-size: 0.88rem;
     padding: 9px 18px;
     border-radius: 3px;
+  }
+  .nav-toggle {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--paper);
+    width: 40px; height: 40px;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    cursor: pointer;
   }
 
   /* ---------- Hero ---------- */
@@ -305,6 +318,20 @@
     .card-cast { gap: 18px; }
     nav .wrap { height: 58px; }
   }
+
+  @media (max-width: 720px) {
+    .nav-toggle { display: block; }
+    .nav-links {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: var(--void);
+      border-bottom: 1px solid var(--line);
+      flex-direction: row; flex-wrap: wrap;
+      padding: 18px 24px; gap: 14px;
+      opacity: 0; visibility: hidden; pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+    .nav-links.open { opacity: 1; visibility: visible; pointer-events: auto; }
+  }
 </style>
 </head>
 <body>
@@ -312,7 +339,12 @@
 <nav>
   <div class="wrap">
     <div class="brand">The Director<span class="dot">'</span>s Chair</div>
-    <a class="nav-cta" href="#top-choice">Get Started</a>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">&#9776;</button>
+    <div class="nav-links" id="nav-links">
+      <a class="nav-link" href="presets.html">Browse Premises</a>
+      <a class="nav-link" href="status.html">Check Submission</a>
+      <a class="nav-cta" href="#top-choice">Get Started</a>
+    </div>
   </div>
 </nav>
 
@@ -438,5 +470,24 @@
   </div>
 </footer>
 
+<script>
+(function () {
+  "use strict";
+  const toggle = document.getElementById("nav-toggle");
+  const links = document.getElementById("nav-links");
+  toggle.addEventListener("click", function () {
+    const isOpen = links.classList.toggle("open");
+    toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  });
+  // Close the dropdown after picking a link, so it doesn't stay open if the
+  // browser restores scroll/state on back-navigation.
+  links.querySelectorAll("a").forEach(function (a) {
+    a.addEventListener("click", function () {
+      links.classList.remove("open");
+      toggle.setAttribute("aria-expanded", "false");
+    });
+  });
+})();
+</script>
 </body>
 </html>

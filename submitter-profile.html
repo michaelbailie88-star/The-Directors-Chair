@@ -268,10 +268,13 @@ document.getElementById('submitterForm').addEventListener('submit', (e) => {
   // The writer record itself is created by /submit-story on final submit
   // (find-or-create by email) — this page just carries the info forward so
   // The Call Sheet doesn't ask again. Landing on call-sheet.html directly
-  // without this set redirects back here (see call-sheet.html).
+  // without this set redirects back here (see call-sheet.html), forwarding
+  // whatever query string it received (e.g. a ?preset= deep link from
+  // presets.html) — so we forward that same query string back now,
+  // completing the round trip instead of dropping it.
   const submitter = { fullName: name, email, country: country || null, ageConfirmed: true };
   sessionStorage.setItem('dc_writer', JSON.stringify(submitter));
-  window.location.href = 'call-sheet.html';
+  window.location.href = 'call-sheet.html' + window.location.search;
 });
 </script>
 
