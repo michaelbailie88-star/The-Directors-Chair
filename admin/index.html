@@ -132,6 +132,14 @@
     padding: 8px 12px; border-radius: 4px; font-size: 0.85rem;
   }
 
+  .section-header {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--ash); border-bottom: 1px solid var(--line);
+    padding-bottom: 8px; margin: 28px 0 14px;
+  }
+  .section-header:first-child { margin-top: 0; }
+  .badge-new { color: var(--void); background: var(--tungsten-hot); border-color: var(--tungsten-hot); font-weight: 700; }
+
   .loading-row { color: var(--ash); font-size: 0.85rem; text-align: center; padding: 30px; }
 </style>
 </head>
@@ -184,6 +192,25 @@
   let appStatusFilter = "all";
   let allSubmissions = [];
   let allApplicants = [];
+
+  // "New since last visit" — localStorage (not sessionStorage) so it
+  // survives closing the browser entirely, matching what "have I already
+  // seen this" actually means for a recurring admin check-in. Read the OLD
+  // stamp first (that's the threshold for what counts as new THIS visit),
+  // then immediately overwrite it — so nothing renders as new again until
+  // the NEXT separate visit. On a genuinely first-ever visit, treat
+  // nothing as new (an empty dashboard screaming "NEW" at every historical
+  // row would defeat the point).
+  let lastVisitTimestamp = null;
+  (function initLastVisit() {
+    const stored = localStorage.getItem("dc_admin_last_visit");
+    lastVisitTimestamp = stored ? parseInt(stored, 10) : null;
+    localStorage.setItem("dc_admin_last_visit", String(Date.now()));
+  })();
+  function isNewSinceLastVisit(createdAt) {
+    if (!lastVisitTimestamp || !createdAt) return false;
+    return new Date(createdAt).getTime() > lastVisitTimestamp;
+  }
 
   const loginScreen = document.getElementById("login-screen");
   const dashboard = document.getElementById("dashboard");
@@ -315,11 +342,194 @@
     return Math.ceil(ms / (1000 * 60 * 60 * 24));
   }
 
+  const SUB_GROUP_ORDER = ["pending_review", "second_look", "selected", "closed"];
+  const SUB_GROUP_LABELS = {
+    pending_review: "Pending Review",
+    second_look: "Second Look",
+    selected: "Selected",
+    closed: "Closed"
+  };
+
+  // Second Look is sorted soonest-expiring-first — those are the ones that
+  // silently vanish into "closed" if they get buried, so they need to
+  // surface first. Every other group keeps the API's own newest-first
+  // order; there's no equivalent urgency signal for them.
+  function sortSubGroup(key, items) {
+    if (key !== "second_look") return items;
+    return items.slice().sort(function (a, b) {
+      const aExp = a.second_look_expires ? new Date(a.second_look_expires).getTime() : Infinity;
+      const bExp = b.second_look_expires ? new Date(b.second_look_expires).getTime() : Infinity;
+      return aExp - bExp;
+    });
+  }
+
+  function buildSubCard(sub) {
+    const card = document.createElement("div");
+    card.className = "sub-card";
+
+    const top = document.createElement("div");
+    top.className = "sub-card-top";
+
+    const writerBlock = document.createElement("div");
+    const writerName = document.createElement("div");
+    writerName.className = "sub-writer";
+    writerName.textContent = sub.writer_name;
+    const writerMeta = document.createElement("div");
+    writerMeta.className = "sub-writer-meta";
+    writerMeta.textContent = sub.writer_email + (sub.writer_country ? " · " + sub.writer_country : "");
+    writerBlock.appendChild(writerName);
+    writerBlock.appendChild(writerMeta);
+
+    const badgeRow = document.createElement("div");
+    badgeRow.className = "badge-row";
+
+    if (isNewSinceLastVisit(sub.created_at)) {
+      const newBadge = document.createElement("span");
+      newBadge.className = "badge badge-new";
+      newBadge.textContent = "New";
+      badgeRow.appendChild(newBadge);
+    }
+
+    const pathBadge = document.createElement("span");
+    pathBadge.className = "badge badge-path-" + sub.path;
+    pathBadge.textContent = sub.path === "original" ? "Path B — Original" : "Path A — Preset";
+    badgeRow.appendChild(pathBadge);
+
+    const statusBadge = document.createElement("span");
+    statusBadge.className = "badge badge-status-" + sub.status;
+    statusBadge.textContent = sub.status.replace("_", " ");
+    badgeRow.appendChild(statusBadge);
+
+    if (sub.path === "original" && !sub.paid) {
+      const unpaidBadge = document.createElement("span");
+      unpaidBadge.className = "badge badge-unpaid";
+      unpaidBadge.textContent = "Unpaid — abandoned checkout";
+      badgeRow.appendChild(unpaidBadge);
+    }
+
+    top.appendChild(writerBlock);
+    top.appendChild(badgeRow);
+    card.appendChild(top);
+
+    if (sub.path === "preset") {
+      const tag = document.createElement("span");
+      tag.className = "sub-preset-tag";
+      tag.textContent = (sub.preset_genre || "") + " — Preset: " + sub.preset_title;
+      card.appendChild(tag);
+    } else {
+      const premise = document.createElement("p");
+      premise.className = "sub-premise";
+      premise.textContent = "\u201c" + sub.original_premise + "\u201d";
+      card.appendChild(premise);
+    }
+
+    if (sub.status === "second_look" && sub.second_look_expires) {
+      const dl = daysLeft(sub.second_look_expires);
+      const note = document.createElement("div");
+      note.className = "second-look-note";
+      note.textContent = dl !== null && dl >= 0
+        ? "Second Look — " + dl + " day" + (dl === 1 ? "" : "s") + " remaining before this closes automatically."
+        : "Second Look window has passed — will close on the next daily sweep.";
+      card.appendChild(note);
+    }
+
+    const charList = document.createElement("div");
+    charList.className = "char-list";
+    (sub.characters || []).forEach(function (c) {
+      const item = document.createElement("div");
+      item.className = "char-item";
+      const name = document.createElement("div");
+      name.className = "cname";
+      name.textContent = c.name;
+      const desc = document.createElement("div");
+      desc.className = "cdesc";
+      desc.textContent = c.description;
+      item.appendChild(name);
+      item.appendChild(desc);
+      charList.appendChild(item);
+    });
+    card.appendChild(charList);
+
+    const feedback = document.createElement("textarea");
+    feedback.className = "feedback-area";
+    feedback.placeholder = "Feedback for the writer (sent either way)…";
+    feedback.value = sub.feedback_text || "";
+    card.appendChild(feedback);
+
+    const actions = document.createElement("div");
+    actions.className = "action-row";
+
+    const canAct = sub.status === "pending_review" || sub.status === "second_look";
+    const selectBtn = document.createElement("button");
+    selectBtn.className = "action-btn select";
+    selectBtn.textContent = "Select";
+    selectBtn.disabled = !canAct;
+    selectBtn.addEventListener("click", function () { updateSubmission(sub.id, "select", feedback.value); });
+
+    const notSelectedBtn = document.createElement("button");
+    notSelectedBtn.className = "action-btn not-selected";
+    notSelectedBtn.textContent = sub.status === "second_look" ? "Still Not Selected" : "Not Selected";
+    notSelectedBtn.disabled = !canAct;
+    notSelectedBtn.addEventListener("click", function () { updateSubmission(sub.id, "not_selected", feedback.value); });
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "action-btn close";
+    closeBtn.textContent = "Close";
+    closeBtn.disabled = sub.status === "closed";
+    closeBtn.addEventListener("click", function () { updateSubmission(sub.id, "close", feedback.value); });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "action-btn delete";
+    deleteBtn.textContent = "Delete Permanently";
+    deleteBtn.disabled = sub.status !== "closed";
+    deleteBtn.title = sub.status === "closed"
+      ? "Permanently removes this submission. Cannot be undone."
+      : "Only closed submissions can be deleted.";
+    deleteBtn.addEventListener("click", function () {
+      const who = sub.path === "original" ? sub.original_premise : sub.preset_title;
+      if (!confirm("Permanently delete this submission (\"" + who + "\")? This cannot be undone.")) return;
+      deleteSubmission(sub.id);
+    });
+
+    actions.appendChild(selectBtn);
+    actions.appendChild(notSelectedBtn);
+    actions.appendChild(closeBtn);
+    actions.appendChild(deleteBtn);
+    card.appendChild(actions);
+
+    return card;
+  }
+
   function renderSubList() {
     const listEl = document.getElementById("sub-list");
     listEl.textContent = "";
-    const filtered = subStatusFilter === "all" ? allSubmissions : allSubmissions.filter(function (s) { return s.status === subStatusFilter; });
 
+    if (subStatusFilter === "all") {
+      let anyRendered = false;
+      SUB_GROUP_ORDER.forEach(function (key) {
+        const group = allSubmissions.filter(function (s) { return s.status === key; });
+        if (group.length === 0) return;
+        anyRendered = true;
+        const header = document.createElement("div");
+        header.className = "section-header";
+        header.textContent = SUB_GROUP_LABELS[key] + " (" + group.length + ")";
+        listEl.appendChild(header);
+        sortSubGroup(key, group).forEach(function (sub) {
+          listEl.appendChild(buildSubCard(sub));
+        });
+      });
+      if (!anyRendered) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "Nothing here.";
+        listEl.appendChild(empty);
+      }
+      return;
+    }
+
+    // A specific status chip is active — one group, no section header since
+    // the chip itself already says which status this is.
+    const filtered = sortSubGroup(subStatusFilter, allSubmissions.filter(function (s) { return s.status === subStatusFilter; }));
     if (filtered.length === 0) {
       const empty = document.createElement("div");
       empty.className = "empty-state";
@@ -327,135 +537,7 @@
       listEl.appendChild(empty);
       return;
     }
-
-    filtered.forEach(function (sub) {
-      const card = document.createElement("div");
-      card.className = "sub-card";
-
-      const top = document.createElement("div");
-      top.className = "sub-card-top";
-
-      const writerBlock = document.createElement("div");
-      const writerName = document.createElement("div");
-      writerName.className = "sub-writer";
-      writerName.textContent = sub.writer_name;
-      const writerMeta = document.createElement("div");
-      writerMeta.className = "sub-writer-meta";
-      writerMeta.textContent = sub.writer_email + (sub.writer_country ? " · " + sub.writer_country : "");
-      writerBlock.appendChild(writerName);
-      writerBlock.appendChild(writerMeta);
-
-      const badgeRow = document.createElement("div");
-      badgeRow.className = "badge-row";
-      const pathBadge = document.createElement("span");
-      pathBadge.className = "badge badge-path-" + sub.path;
-      pathBadge.textContent = sub.path === "original" ? "Path B — Original" : "Path A — Preset";
-      badgeRow.appendChild(pathBadge);
-
-      const statusBadge = document.createElement("span");
-      statusBadge.className = "badge badge-status-" + sub.status;
-      statusBadge.textContent = sub.status.replace("_", " ");
-      badgeRow.appendChild(statusBadge);
-
-      if (sub.path === "original" && !sub.paid) {
-        const unpaidBadge = document.createElement("span");
-        unpaidBadge.className = "badge badge-unpaid";
-        unpaidBadge.textContent = "Unpaid — abandoned checkout";
-        badgeRow.appendChild(unpaidBadge);
-      }
-
-      top.appendChild(writerBlock);
-      top.appendChild(badgeRow);
-      card.appendChild(top);
-
-      if (sub.path === "preset") {
-        const tag = document.createElement("span");
-        tag.className = "sub-preset-tag";
-        tag.textContent = (sub.preset_genre || "") + " — Preset: " + sub.preset_title;
-        card.appendChild(tag);
-      } else {
-        const premise = document.createElement("p");
-        premise.className = "sub-premise";
-        premise.textContent = "\u201c" + sub.original_premise + "\u201d";
-        card.appendChild(premise);
-      }
-
-      if (sub.status === "second_look" && sub.second_look_expires) {
-        const dl = daysLeft(sub.second_look_expires);
-        const note = document.createElement("div");
-        note.className = "second-look-note";
-        note.textContent = dl !== null && dl >= 0
-          ? "Second Look — " + dl + " day" + (dl === 1 ? "" : "s") + " remaining before this closes automatically."
-          : "Second Look window has passed — will close on the next daily sweep.";
-        card.appendChild(note);
-      }
-
-      const charList = document.createElement("div");
-      charList.className = "char-list";
-      (sub.characters || []).forEach(function (c) {
-        const item = document.createElement("div");
-        item.className = "char-item";
-        const name = document.createElement("div");
-        name.className = "cname";
-        name.textContent = c.name;
-        const desc = document.createElement("div");
-        desc.className = "cdesc";
-        desc.textContent = c.description;
-        item.appendChild(name);
-        item.appendChild(desc);
-        charList.appendChild(item);
-      });
-      card.appendChild(charList);
-
-      const feedback = document.createElement("textarea");
-      feedback.className = "feedback-area";
-      feedback.placeholder = "Feedback for the writer (sent either way)…";
-      feedback.value = sub.feedback_text || "";
-      card.appendChild(feedback);
-
-      const actions = document.createElement("div");
-      actions.className = "action-row";
-
-      const canAct = sub.status === "pending_review" || sub.status === "second_look";
-      const selectBtn = document.createElement("button");
-      selectBtn.className = "action-btn select";
-      selectBtn.textContent = "Select";
-      selectBtn.disabled = !canAct;
-      selectBtn.addEventListener("click", function () { updateSubmission(sub.id, "select", feedback.value); });
-
-      const notSelectedBtn = document.createElement("button");
-      notSelectedBtn.className = "action-btn not-selected";
-      notSelectedBtn.textContent = sub.status === "second_look" ? "Still Not Selected" : "Not Selected";
-      notSelectedBtn.disabled = !canAct;
-      notSelectedBtn.addEventListener("click", function () { updateSubmission(sub.id, "not_selected", feedback.value); });
-
-      const closeBtn = document.createElement("button");
-      closeBtn.className = "action-btn close";
-      closeBtn.textContent = "Close";
-      closeBtn.disabled = sub.status === "closed";
-      closeBtn.addEventListener("click", function () { updateSubmission(sub.id, "close", feedback.value); });
-
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "action-btn delete";
-      deleteBtn.textContent = "Delete Permanently";
-      deleteBtn.disabled = sub.status !== "closed";
-      deleteBtn.title = sub.status === "closed"
-        ? "Permanently removes this submission. Cannot be undone."
-        : "Only closed submissions can be deleted.";
-      deleteBtn.addEventListener("click", function () {
-        const who = sub.path === "original" ? sub.original_premise : sub.preset_title;
-        if (!confirm("Permanently delete this submission (\"" + who + "\")? This cannot be undone.")) return;
-        deleteSubmission(sub.id);
-      });
-
-      actions.appendChild(selectBtn);
-      actions.appendChild(notSelectedBtn);
-      actions.appendChild(closeBtn);
-      actions.appendChild(deleteBtn);
-      card.appendChild(actions);
-
-      listEl.appendChild(card);
-    });
+    filtered.forEach(function (sub) { listEl.appendChild(buildSubCard(sub)); });
   }
 
   async function updateSubmission(id, action, feedback) {
@@ -529,11 +611,98 @@
     }
   }
 
+  const APP_GROUP_ORDER = ["applied", "shortlisted", "cast", "passed"];
+  const APP_GROUP_LABELS = {
+    applied: "Applied",
+    shortlisted: "Shortlisted",
+    cast: "Cast",
+    passed: "Passed"
+  };
+
+  function buildAppCard(app) {
+    const card = document.createElement("div");
+    card.className = "app-card";
+
+    const top = document.createElement("div");
+    top.className = "app-card-top";
+
+    const infoBlock = document.createElement("div");
+    const titleRow = document.createElement("div");
+    titleRow.style.display = "flex";
+    titleRow.style.alignItems = "center";
+    titleRow.style.gap = "8px";
+    if (isNewSinceLastVisit(app.created_at)) {
+      const newBadge = document.createElement("span");
+      newBadge.className = "badge badge-new";
+      newBadge.textContent = "New";
+      titleRow.appendChild(newBadge);
+    }
+    const title = document.createElement("div");
+    title.className = "app-title";
+    title.textContent = app.city + ", " + app.country;
+    titleRow.appendChild(title);
+    const meta = document.createElement("div");
+    meta.className = "app-meta";
+    meta.textContent = app.age + " · " + app.gender + " · " + app.email;
+    infoBlock.appendChild(titleRow);
+    infoBlock.appendChild(meta);
+
+    const select = document.createElement("select");
+    select.className = "status-select";
+    APP_STATUSES.filter(function (s) { return s.key !== "all"; }).forEach(function (s) {
+      const opt = document.createElement("option");
+      opt.value = s.key;
+      opt.textContent = s.label;
+      if (app.status === s.key) opt.selected = true;
+      select.appendChild(opt);
+    });
+    select.addEventListener("change", function () {
+      updateApplicant(app.id, select.value);
+    });
+
+    top.appendChild(infoBlock);
+    top.appendChild(select);
+    card.appendChild(top);
+
+    const handles = document.createElement("div");
+    handles.className = "handle-tags";
+    (app.handles || []).forEach(function (h) {
+      const tag = document.createElement("span");
+      tag.className = "handle-tag";
+      tag.textContent = h.platform + ": " + h.handle;
+      handles.appendChild(tag);
+    });
+    card.appendChild(handles);
+
+    return card;
+  }
+
   function renderAppList() {
     const listEl = document.getElementById("app-list");
     listEl.textContent = "";
-    const filtered = appStatusFilter === "all" ? allApplicants : allApplicants.filter(function (a) { return a.status === appStatusFilter; });
 
+    if (appStatusFilter === "all") {
+      let anyRendered = false;
+      APP_GROUP_ORDER.forEach(function (key) {
+        const group = allApplicants.filter(function (a) { return a.status === key; });
+        if (group.length === 0) return;
+        anyRendered = true;
+        const header = document.createElement("div");
+        header.className = "section-header";
+        header.textContent = APP_GROUP_LABELS[key] + " (" + group.length + ")";
+        listEl.appendChild(header);
+        group.forEach(function (app) { listEl.appendChild(buildAppCard(app)); });
+      });
+      if (!anyRendered) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "Nothing here.";
+        listEl.appendChild(empty);
+      }
+      return;
+    }
+
+    const filtered = allApplicants.filter(function (a) { return a.status === appStatusFilter; });
     if (filtered.length === 0) {
       const empty = document.createElement("div");
       empty.className = "empty-state";
@@ -541,53 +710,7 @@
       listEl.appendChild(empty);
       return;
     }
-
-    filtered.forEach(function (app) {
-      const card = document.createElement("div");
-      card.className = "app-card";
-
-      const top = document.createElement("div");
-      top.className = "app-card-top";
-
-      const infoBlock = document.createElement("div");
-      const title = document.createElement("div");
-      title.className = "app-title";
-      title.textContent = app.city + ", " + app.country;
-      const meta = document.createElement("div");
-      meta.className = "app-meta";
-      meta.textContent = app.age + " · " + app.gender + " · " + app.email;
-      infoBlock.appendChild(title);
-      infoBlock.appendChild(meta);
-
-      const select = document.createElement("select");
-      select.className = "status-select";
-      APP_STATUSES.filter(function (s) { return s.key !== "all"; }).forEach(function (s) {
-        const opt = document.createElement("option");
-        opt.value = s.key;
-        opt.textContent = s.label;
-        if (app.status === s.key) opt.selected = true;
-        select.appendChild(opt);
-      });
-      select.addEventListener("change", function () {
-        updateApplicant(app.id, select.value);
-      });
-
-      top.appendChild(infoBlock);
-      top.appendChild(select);
-      card.appendChild(top);
-
-      const handles = document.createElement("div");
-      handles.className = "handle-tags";
-      (app.handles || []).forEach(function (h) {
-        const tag = document.createElement("span");
-        tag.className = "handle-tag";
-        tag.textContent = h.platform + ": " + h.handle;
-        handles.appendChild(tag);
-      });
-      card.appendChild(handles);
-
-      listEl.appendChild(card);
-    });
+    filtered.forEach(function (app) { listEl.appendChild(buildAppCard(app)); });
   }
 
   async function updateApplicant(id, status) {
