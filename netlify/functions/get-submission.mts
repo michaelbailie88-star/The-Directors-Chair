@@ -4,11 +4,12 @@ import { db } from "./lib/db.mts";
 // GET /get-submission?id=<uuid>
 //
 // Public by design, scoped narrowly: knowing the submission's UUID is the
-// same trust level as an order-confirmation link elsewhere — it exists so
-// the confirmation screen renders correctly after a Stripe redirect wipes
-// all in-memory page state (full navigation away and back). Returns only
-// what the confirmation UI needs, never the writer's email or other
-// submissions.
+// same trust level as an order-confirmation link elsewhere. Powers two
+// things: (1) the confirmation screen after a Stripe redirect wipes all
+// in-memory page state, and (2) status.html — the page every confirmation
+// email links to, so a writer can check their submission is real and see
+// its current state without an account. Never returns the writer's email
+// or any other submission.
 export default async (req: Request, context: Context) => {
   if (req.method !== "GET") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
@@ -22,7 +23,9 @@ export default async (req: Request, context: Context) => {
 
   const database = db();
   const [submission] = await database.sql`
-    SELECT path, preset_title, original_premise, credit_line, paid
+    SELECT path, preset_title, preset_genre, original_premise, characters,
+           credit_line, paid, status, feedback_text,
+           second_look_start, second_look_expires, created_at
     FROM submissions
     WHERE id = ${id}
     LIMIT 1

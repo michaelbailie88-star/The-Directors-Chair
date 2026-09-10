@@ -1,5 +1,6 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "./lib/db.mts";
+import { sendEmail, emailShell, ADMIN_EMAIL } from "./lib/email.mts";
 
 // POST /submit-story
 // Body: {
@@ -98,6 +99,39 @@ export default async (req: Request, context: Context) => {
     )
     RETURNING id
   `;
+
+  // Path A is free and complete the moment it's inserted — no payment gate,
+  // so this is the one true "you're really submitted" moment for it. Path B
+  // deliberately sends nothing here: it isn't a live submission until the
+  // Stripe webhook confirms payment, and that's where its email fires instead.
+  if (path === "preset") {
+    const origin = new URL(req.url).origin;
+    const statusUrl = `${origin}/status.html?id=${submission.id}`;
+
+    await sendEmail({
+      to: { email: writer.email.trim(), name: writer.fullName.trim() },
+      subject: "Your submission is in — The Director's Chair",
+      htmlContent: emailShell(`
+        <p style="color:#F2EDE3; font-size:16px; margin-bottom:16px;">Hi ${writer.fullName.trim()},</p>
+        <p style="color:#F2EDE3; font-size:15px; line-height:1.6; margin-bottom:16px;">
+          Your character submission for <strong>${selectedPreset.title}</strong> is officially in the queue. No payment was required for this one — preset submissions are always free.
+        </p>
+        <p style="color:#8A8378; font-size:14px; line-height:1.6; margin-bottom:20px;">
+          You'll be credited as <strong style="color:#E8A33D;">Characters by ${writer.fullName.trim()}</strong> if this is selected.
+        </p>
+        <a href="${statusUrl}" style="display:inline-block; background:#E8A33D; color:#0A0908; padding:12px 22px; border-radius:4px; font-weight:600; font-size:14px;">Check your status</a>
+      `)
+    }).catch((err) => console.error("submit-story: writer email failed", err));
+
+    await sendEmail({
+      to: { email: ADMIN_EMAIL },
+      subject: `New Path A submission — ${selectedPreset.title}`,
+      htmlContent: emailShell(`
+        <p style="color:#F2EDE3; font-size:15px; margin-bottom:12px;">${writer.fullName.trim()} (${writer.email.trim()}) submitted characters for <strong>${selectedPreset.title}</strong>.</p>
+        <a href="${origin}/admin/index.html" style="color:#E8A33D; font-size:14px;">Open admin dashboard &rarr;</a>
+      `)
+    }).catch((err) => console.error("submit-story: admin email failed", err));
+  }
 
   return new Response(JSON.stringify({
     submissionId: submission.id,
