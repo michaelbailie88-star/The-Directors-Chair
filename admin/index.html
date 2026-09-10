@@ -116,6 +116,9 @@
   .action-btn.not-selected:hover { background: rgba(196,67,46,0.1); }
   .action-btn.close { color: var(--ash); }
   .action-btn.close:hover { color: var(--paper); border-color: var(--ash); }
+  .action-btn.delete { border-color: var(--tally); background: var(--tally); color: var(--paper); }
+  .action-btn.delete:hover:not(:disabled) { background: #a3372a; }
+  .action-btn.delete:disabled { border-color: var(--line); background: transparent; color: var(--ash); }
   .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* ---- Casting applicant card ---- */
@@ -432,9 +435,23 @@
       closeBtn.disabled = sub.status === "closed";
       closeBtn.addEventListener("click", function () { updateSubmission(sub.id, "close", feedback.value); });
 
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "action-btn delete";
+      deleteBtn.textContent = "Delete Permanently";
+      deleteBtn.disabled = sub.status !== "closed";
+      deleteBtn.title = sub.status === "closed"
+        ? "Permanently removes this submission. Cannot be undone."
+        : "Only closed submissions can be deleted.";
+      deleteBtn.addEventListener("click", function () {
+        const who = sub.path === "original" ? sub.original_premise : sub.preset_title;
+        if (!confirm("Permanently delete this submission (\"" + who + "\")? This cannot be undone.")) return;
+        deleteSubmission(sub.id);
+      });
+
       actions.appendChild(selectBtn);
       actions.appendChild(notSelectedBtn);
       actions.appendChild(closeBtn);
+      actions.appendChild(deleteBtn);
       card.appendChild(actions);
 
       listEl.appendChild(card);
@@ -450,6 +467,18 @@
       await loadSubmissions();
     } catch (e) {
       alert("Could not update submission: " + e.message);
+    }
+  }
+
+  async function deleteSubmission(id) {
+    try {
+      await adminFetch("/admin-delete-submission", {
+        method: "POST",
+        body: JSON.stringify({ submissionId: id })
+      });
+      await loadSubmissions();
+    } catch (e) {
+      alert("Could not delete submission: " + e.message);
     }
   }
 
