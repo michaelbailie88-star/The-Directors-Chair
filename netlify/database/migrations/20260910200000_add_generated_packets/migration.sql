@@ -1,0 +1,22 @@
+-- The Director's Chair — add packet storage for the story builder
+--
+-- generated_packets holds the full output of the AI packet generator plus
+-- delivery state, as one JSONB blob per submission:
+--   {
+--     "generated_at": "<iso timestamp>",
+--     "characters": [
+--       {
+--         "name": "...",
+--         "voice_direction": "...",
+--         "riff_beats": ["...", ...],
+--         "sample_lines": ["...", ...],
+--         "delivery_email": "<email or null — filled in by admin before sending>",
+--         "sent_at": "<iso timestamp or null>"
+--       }
+--     ]
+--   }
+--
+-- Nullable and no default: most submissions never reach this stage (only
+-- Selected ones do), so absence of a value is the normal, expected state
+-- rather than an edge case to work around.
+ALTER TABLE submissions ADD COLUMN generated_packets JSONB;
