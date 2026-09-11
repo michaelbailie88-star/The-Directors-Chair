@@ -3,6 +3,24 @@ import { db } from "./lib/db.mts";
 import { requireAdmin } from "./lib/auth.mts";
 import { sendEmail, emailShell } from "./lib/email.mts";
 
+// Footage upload form: a Google Form with a Submission ID field, a
+// Character Name field, and a file-upload question. Confirmed with Michael
+// which entry ID maps to which field before wiring this in — getting this
+// backwards would silently mislabel every response with no visible symptom.
+// If the form is ever recreated, only these three constants need updating.
+const UPLOAD_FORM_BASE = "https://docs.google.com/forms/d/e/1FAIpQLSe3OcITrdPpPn7C-mRFUVDlTOaBayrVOON6nSIDKctbWnHEjw/viewform";
+const UPLOAD_FORM_ENTRY_SUBMISSION_ID = "entry.1022205792";
+const UPLOAD_FORM_ENTRY_CHARACTER_NAME = "entry.2120961742";
+
+function buildUploadLink(submissionId: string, characterName: string): string {
+  const params = new URLSearchParams({
+    usp: "pp_url",
+    [UPLOAD_FORM_ENTRY_SUBMISSION_ID]: submissionId,
+    [UPLOAD_FORM_ENTRY_CHARACTER_NAME]: characterName
+  });
+  return `${UPLOAD_FORM_BASE}?${params.toString()}`;
+}
+
 // POST /admin-send-packet
 // Body: {
 //   submissionId, characterName, email,
@@ -76,6 +94,7 @@ export default async (req: Request, context: Context) => {
 
   const premise = sub.path === "original" ? sub.original_premise : sub.preset_title;
   const sentAt = new Date().toISOString();
+  const uploadLink = buildUploadLink(submissionId, characterName);
 
   try {
     await sendEmail({
@@ -94,6 +113,9 @@ export default async (req: Request, context: Context) => {
         <ul style="color:#8A8378; font-size:14px; line-height:1.7; font-style:italic; margin-bottom:4px; padding-left:20px;">
           ${sampleLines.map((l: string) => `<li>${escapeHtml(l)}</li>`).join("")}
         </ul>
+        <p style="color:#F2EDE3; font-size:15px; font-weight:600; margin-bottom:8px; margin-top:24px;">When you're ready to send in your footage</p>
+        <p style="color:#8A8378; font-size:13px; line-height:1.6; margin-bottom:16px;">Record your confessional on your own phone, then upload it here. Your submission ID and name are already filled in — just attach your file.</p>
+        <a href="${uploadLink}" style="display:inline-block; background:#E8A33D; color:#0A0908; padding:12px 22px; border-radius:4px; font-weight:600; font-size:14px;">Upload your footage &rarr;</a>
       `)
     });
   } catch (err: any) {
