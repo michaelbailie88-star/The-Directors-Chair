@@ -124,6 +124,8 @@
   /* ---- Story Builder (confessional packets) ---- */
   .builder-section { margin-top: 18px; padding-top: 18px; border-top: 1px dashed var(--line); }
   .builder-header { font-family: 'Fraunces', serif; font-size: 0.95rem; color: var(--tungsten-hot); margin-bottom: 12px; }
+  .footage-link { display: inline-block; color: var(--ash); font-size: 0.8rem; margin-bottom: 14px; }
+  .footage-link:hover { color: var(--tungsten-hot); }
   .action-btn.generate { border-color: var(--tungsten); color: var(--tungsten-hot); margin-bottom: 14px; }
   .action-btn.generate:hover:not(:disabled) { background: rgba(232,163,61,0.1); }
   .packet-card { background: var(--charcoal-lift); border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin-bottom: 14px; }
@@ -528,6 +530,14 @@
       bHeader.className = "builder-header";
       bHeader.textContent = "Story Builder — Confessional Packets";
       builder.appendChild(bHeader);
+
+      const footageLink = document.createElement("a");
+      footageLink.className = "footage-link";
+      footageLink.href = "https://docs.google.com/forms/d/1Ma-hzvVIJy8iXYnlaqOs10OSRiNhzWFTr961UrkLKJU/edit#responses";
+      footageLink.target = "_blank";
+      footageLink.rel = "noopener";
+      footageLink.textContent = "View submitted footage responses \u2197";
+      builder.appendChild(footageLink);
 
       const hasPackets = !!(sub.generated_packets && Array.isArray(sub.generated_packets.characters));
 
