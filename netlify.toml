@@ -2,6 +2,15 @@
   publish = "."
   functions = "netlify/functions"
 
+# admin-generate-packets calls the Claude API server-side, which can take
+# longer than the platform default sync timeout — bumped to the documented
+# maximum for synchronous functions. If this stops being enough headroom for
+# larger casts, the real fix is converting this specific function to a
+# Netlify Background Function (15 min limit) with a polling UI, not raising
+# this further — 26s is the ceiling for synchronous functions.
+[functions."admin-generate-packets"]
+  timeout = 26
+
 [[headers]]
   for = "/admin/*"
   [headers.values]
