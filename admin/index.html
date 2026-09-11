@@ -121,6 +121,29 @@
   .action-btn.delete:disabled { border-color: var(--line); background: transparent; color: var(--ash); }
   .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+  /* ---- Story Builder (confessional packets) ---- */
+  .builder-section { margin-top: 18px; padding-top: 18px; border-top: 1px dashed var(--line); }
+  .builder-header { font-family: 'Fraunces', serif; font-size: 0.95rem; color: var(--tungsten-hot); margin-bottom: 12px; }
+  .action-btn.generate { border-color: var(--tungsten); color: var(--tungsten-hot); margin-bottom: 14px; }
+  .action-btn.generate:hover:not(:disabled) { background: rgba(232,163,61,0.1); }
+  .packet-card { background: var(--charcoal-lift); border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin-bottom: 14px; }
+  .packet-name { font-weight: 600; font-size: 0.92rem; color: var(--paper); margin-bottom: 10px; }
+  .packet-field-label { display: block; color: var(--ash); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; margin-top: 10px; }
+  .packet-field {
+    width: 100%; background: var(--void); border: 1px solid var(--line); color: var(--paper);
+    padding: 9px 11px; border-radius: 4px; font-size: 0.85rem; font-family: inherit; min-height: 46px;
+  }
+  .packet-field:focus { outline: none; border-color: var(--tungsten); }
+  .packet-email-row { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+  .packet-email-input {
+    flex: 1; min-width: 200px; background: var(--void); border: 1px solid var(--line); color: var(--paper);
+    padding: 9px 11px; border-radius: 4px; font-size: 0.85rem; font-family: inherit;
+  }
+  .packet-email-input:focus { outline: none; border-color: var(--tungsten); }
+  .action-btn.send { border-color: var(--ok); color: var(--ok); white-space: nowrap; }
+  .action-btn.send:hover:not(:disabled) { background: rgba(74,157,110,0.1); }
+  .packet-sent-note { color: var(--ok); font-size: 0.78rem; margin-top: 8px; }
+
   /* ---- Casting applicant card ---- */
   .app-card-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
   .app-title { font-family: 'Fraunces', serif; font-size: 1.05rem; }
@@ -497,7 +520,171 @@
     actions.appendChild(deleteBtn);
     card.appendChild(actions);
 
+    if (sub.status === "selected") {
+      const builder = document.createElement("div");
+      builder.className = "builder-section";
+
+      const bHeader = document.createElement("div");
+      bHeader.className = "builder-header";
+      bHeader.textContent = "Story Builder — Confessional Packets";
+      builder.appendChild(bHeader);
+
+      const hasPackets = !!(sub.generated_packets && Array.isArray(sub.generated_packets.characters));
+
+      const genBtn = document.createElement("button");
+      genBtn.className = "action-btn generate";
+      genBtn.textContent = hasPackets ? "Regenerate All" : "Generate Packets";
+      genBtn.addEventListener("click", function () {
+        if (hasPackets) {
+          const sentCount = sub.generated_packets.characters.filter(function (c) { return !!c.sent_at; }).length;
+          if (sentCount > 0) {
+            const ok = confirm(
+              sentCount + " of " + sub.generated_packets.characters.length +
+              " packet(s) have already been sent. Regenerating creates new content for everyone — " +
+              "already-sent emails won't be un-sent, but the text shown here will change. Continue?"
+            );
+            if (!ok) return;
+          }
+        }
+        generatePackets(sub.id, genBtn);
+      });
+      builder.appendChild(genBtn);
+
+      if (hasPackets) {
+        sub.generated_packets.characters.forEach(function (pc) {
+          builder.appendChild(buildPacketCard(sub.id, pc));
+        });
+      }
+
+      card.appendChild(builder);
+    }
+
     return card;
+  }
+
+  function buildPacketCard(subId, pc) {
+    const pcard = document.createElement("div");
+    pcard.className = "packet-card";
+
+    const pname = document.createElement("div");
+    pname.className = "packet-name";
+    pname.textContent = pc.name;
+    pcard.appendChild(pname);
+
+    const voiceLabel = document.createElement("label");
+    voiceLabel.className = "packet-field-label";
+    voiceLabel.textContent = "Voice direction";
+    const voiceInput = document.createElement("textarea");
+    voiceInput.className = "packet-field";
+    voiceInput.value = pc.voice_direction || "";
+    pcard.appendChild(voiceLabel);
+    pcard.appendChild(voiceInput);
+
+    const beatsLabel = document.createElement("label");
+    beatsLabel.className = "packet-field-label";
+    beatsLabel.textContent = "Riff beats (one per line)";
+    const beatsInput = document.createElement("textarea");
+    beatsInput.className = "packet-field";
+    beatsInput.style.minHeight = "80px";
+    beatsInput.value = (pc.riff_beats || []).join("\n");
+    pcard.appendChild(beatsLabel);
+    pcard.appendChild(beatsInput);
+
+    const linesLabel = document.createElement("label");
+    linesLabel.className = "packet-field-label";
+    linesLabel.textContent = "Sample lines (one per line)";
+    const linesInput = document.createElement("textarea");
+    linesInput.className = "packet-field";
+    linesInput.style.minHeight = "70px";
+    linesInput.value = (pc.sample_lines || []).join("\n");
+    pcard.appendChild(linesLabel);
+    pcard.appendChild(linesInput);
+
+    const emailRow = document.createElement("div");
+    emailRow.className = "packet-email-row";
+    const emailInput = document.createElement("input");
+    emailInput.type = "email";
+    emailInput.className = "packet-email-input";
+    emailInput.placeholder = "cast member's email";
+    emailInput.value = pc.delivery_email || "";
+    const sendBtn = document.createElement("button");
+    sendBtn.className = "action-btn send";
+    sendBtn.textContent = pc.sent_at ? "Re-send" : "Send Packet";
+    sendBtn.addEventListener("click", function () {
+      sendPacket(subId, pc.name, emailInput.value, voiceInput.value, beatsInput.value, linesInput.value, sendBtn);
+    });
+    emailRow.appendChild(emailInput);
+    emailRow.appendChild(sendBtn);
+    pcard.appendChild(emailRow);
+
+    if (pc.sent_at) {
+      const sentNote = document.createElement("div");
+      sentNote.className = "packet-sent-note";
+      const when = new Date(pc.sent_at).toLocaleString();
+      sentNote.textContent = "Sent " + when + (pc.delivery_email ? " to " + pc.delivery_email : "");
+      pcard.appendChild(sentNote);
+    }
+
+    return pcard;
+  }
+
+  async function generatePackets(id, btn) {
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Generating…";
+    try {
+      const res = await adminFetch("/admin-generate-packets", {
+        method: "POST",
+        body: JSON.stringify({ submissionId: id })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(function () { return {}; });
+        throw new Error(data.error || ("Request failed (" + res.status + ")"));
+      }
+      await loadSubmissions();
+    } catch (e) {
+      alert("Could not generate packets: " + e.message);
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
+  async function sendPacket(subId, characterName, email, voiceDirectionText, beatsText, linesText, btn) {
+    const trimmedEmail = (email || "").trim();
+    if (!trimmedEmail) { alert("Enter an email address for " + characterName + " first."); return; }
+    const riffBeats = beatsText.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+    const sampleLines = linesText.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!voiceDirectionText.trim() || riffBeats.length === 0 || sampleLines.length === 0) {
+      alert("Voice direction, riff beats, and sample lines can't be empty.");
+      return;
+    }
+    if (!confirm("Send this packet to " + trimmedEmail + "?")) return;
+
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+    try {
+      const res = await adminFetch("/admin-send-packet", {
+        method: "POST",
+        body: JSON.stringify({
+          submissionId: subId,
+          characterName: characterName,
+          email: trimmedEmail,
+          voiceDirection: voiceDirectionText.trim(),
+          riffBeats: riffBeats,
+          sampleLines: sampleLines
+        })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(function () { return {}; });
+        throw new Error(data.error || ("Request failed (" + res.status + ")"));
+      }
+      await loadSubmissions();
+    } catch (e) {
+      alert("Could not send packet: " + e.message);
+      btn.disabled = false;
+      btn.textContent = original;
+    }
   }
 
   function renderSubList() {

@@ -29,7 +29,7 @@ export default async (req: Request, context: Context) => {
       s.id, s.path, s.status, s.preset_title, s.preset_genre, s.original_premise,
       s.characters, s.consent_checked, s.paid, s.amount_paid_cents,
       s.second_look_start, s.second_look_expires, s.feedback_text, s.credit_line,
-      s.created_at, s.updated_at,
+      s.generated_packets, s.created_at, s.updated_at,
       w.full_name AS writer_name, w.email AS writer_email, w.country AS writer_country
     FROM submissions s
     JOIN writers w ON w.id = s.writer_id
